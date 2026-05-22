@@ -1,0 +1,352 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* ── Light mode tokens ── */
+  --color-primary:                   #334529;
+  --color-primary-container:         #4a5d3f;
+  --color-on-primary:                #ffffff;
+  --color-on-primary-container:      #bfd5af;
+
+  --color-surface:                   #fcf9f8;
+  --color-surface-container-lowest:  #ffffff;
+  --color-surface-container-low:     #f6f3f2;
+  --color-surface-container:         #f0eded;
+  --color-surface-container-high:    #eae7e7;
+  --color-surface-variant:           #e4e2e1;
+
+  --color-on-surface:                #1b1c1c;
+  --color-on-surface-variant:        #444840;
+
+  --color-outline:                   #74786f;
+  --color-outline-variant:           #c4c8bd;
+
+  --color-secondary:                 #77574d;
+  --color-on-secondary:              #ffffff;
+
+  --color-error:                     #ba1a1a;
+  --color-on-error:                  #ffffff;
+
+  --font-sans:   'Montserrat', sans-serif;
+  --font-serif:  'Playfair Display', serif;
+}
+
+/* ── Dark mode: redefine the SAME variable names so all Tailwind utilities
+      pick up the new values automatically ── */
+.dark {
+  --color-primary:                   #8fa67e;
+  --color-primary-container:         #3a5030;
+  --color-on-primary:                #0e2208;
+  --color-on-primary-container:      #c5dcb4;
+
+  /* Deep forest-green surfaces — no pure black */
+  --color-surface:                   #0d1a0d;
+  --color-surface-container-lowest:  #0a1509;
+  --color-surface-container-low:     #111f11;
+  --color-surface-container:         #162416;
+  --color-surface-container-high:    #1c2b1c;
+  --color-surface-variant:           #213222;
+
+  --color-on-surface:                #eaf5e6;
+  --color-on-surface-variant:        #bdd6b7;
+
+  --color-outline:                   #5e7a58;
+  --color-outline-variant:           #2e4430;
+
+  --color-secondary:                 #c99f93;
+  --color-on-secondary:              #4a2920;
+
+  --color-error:                     #ff8a8a;
+  --color-on-error:                  #690005;
+}
+
+/* ── Base ── */
+body {
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ── Scrollbar hide ── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ── Theme toggle spin animation ── */
+@keyframes theme-toggle {
+  0%   { transform: scale(1)   rotate(0deg); }
+  50%  { transform: scale(0.8) rotate(180deg); }
+  100% { transform: scale(1)   rotate(360deg); }
+}
+.theme-icon-animate {
+  animation: theme-toggle 0.5s ease-in-out;
+}
+
+/* ── Bottom Navigation Bar ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background-color: var(--color-surface-container-lowest);
+  border-top: 1px solid var(--color-outline-variant);
+  box-shadow: 0 -4px 16px rgba(74, 58, 47, 0.08);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.bottom-nav-inner {
+  max-width: 28rem;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 0.5rem;
+  height: 64px;
+}
+
+.bottom-nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: 1;
+  padding: 8px 0 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease;
+}
+
+.bottom-nav-tab:active {
+  transform: scale(0.92);
+}
+
+.bottom-nav-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--color-on-surface-variant);
+  transition: color 0.2s ease, font-weight 0.2s ease;
+}
+
+.bottom-nav-label.active {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* Small flame indicator below label */
+.bottom-nav-flame {
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  opacity: 0;
+  transform: scale(0) translateY(-2px);
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bottom-nav-flame.visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.bottom-nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border-radius: 9999px;
+  background-color: var(--color-error);
+  color: var(--color-on-error);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 4px rgba(186, 26, 26, 0.3);
+}
+
+/* Dark mode shadow adjustments */
+.dark .bottom-nav {
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* ── Banner Carousel (Card-based) ── */
+.banner-section {
+  margin-top: 1.25rem;
+  /* Allow cards to bleed outside the container padding */
+  margin-left: -1.5rem;
+  margin-right: -1.5rem;
+}
+
+.banner-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 1.5rem;
+  /* Hide scrollbar */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.banner-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.banner-card {
+  flex: 0 0 85%;
+  scroll-snap-align: start;
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  max-height: 340px;
+}
+
+.banner-card-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.banner-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.35) 0%,
+    rgba(0, 0, 0, 0.05) 40%,
+    rgba(0, 0, 0, 0.1) 60%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+
+.banner-card-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+  z-index: 2;
+}
+
+/* Top: eyebrow + title + subtitle */
+.banner-card-top {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.banner-card-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.banner-card-title {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+}
+
+.banner-card-subtitle {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Center watermark */
+.banner-card-watermark {
+  font-family: var(--font-serif);
+  font-size: 40px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.12);
+  text-align: center;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  letter-spacing: -0.02em;
+}
+
+/* Bottom: icons + text */
+.banner-card-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.banner-card-icons {
+  display: flex;
+  align-items: center;
+}
+
+.banner-card-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  background-color: var(--color-primary);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.banner-card-bottom-text {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Dot indicators */
+.banner-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 0 1.5rem;
+}
+
+.banner-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  background-color: var(--color-outline-variant);
+  transition: all 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.banner-dot.active {
+  width: 24px;
+  background-color: var(--color-primary);
+}
+

@@ -13,7 +13,7 @@ interface BannerSlide {
 
 const slides: BannerSlide[] = [
   {
-    image: '/images/banner1.png',
+    image: '/images/banner1.jpg',
     eyebrow: 'DESTACADO',
     title: 'Leña 100% Certificada',
     subtitle: 'Seca, seleccionada y lista para usar',
@@ -22,7 +22,7 @@ const slides: BannerSlide[] = [
     bottomText: '30+ comerciantes en la región',
   },
   {
-    image: '/images/banner2.png',
+    image: '/images/banner2.jpg',
     eyebrow: 'SUSTENTABLE',
     title: 'Más calor, menos árboles',
     subtitle: 'Manejo forestal responsable',

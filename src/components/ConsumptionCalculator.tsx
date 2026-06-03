@@ -100,8 +100,8 @@ export function ConsumptionCalculator({ open, onClose, onAddToCart }: Consumptio
   const formatNumber = (n: number) => n.toLocaleString('es-CL');
 
   return (
-    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/55 px-4 py-6 backdrop-blur-sm">
-      <div className="w-full max-w-md max-h-[90vh] overflow-hidden rounded-3xl bg-surface shadow-2xl flex flex-col">
+    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/55 px-4 py-6 backdrop-blur-sm animate-backdrop-in">
+      <div className="w-full max-w-md max-h-[90vh] overflow-hidden rounded-3xl bg-surface shadow-2xl flex flex-col animate-modal-in">
         {/* Header */}
         <div className="relative shrink-0 bg-gradient-to-br from-primary to-primary-container px-6 py-5 text-on-primary">
           <button

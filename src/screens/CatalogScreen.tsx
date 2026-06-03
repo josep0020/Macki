@@ -67,13 +67,18 @@ export function CatalogScreen({ cart, comuna, onComunaChange, onAddToCart, onGoT
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
-          {filteredProducts.map(product => (
-            <ProductCard
+          {filteredProducts.map((product, idx) => (
+            <div
               key={product.id}
-              product={product}
-              onAdd={() => onAddToCart(product)}
-              cartQuantity={cart.find(i => i.product.id === product.id)?.quantity ?? 0}
-            />
+              className="stagger-item"
+              style={{ animationDelay: `${idx * 30}ms` }}
+            >
+              <ProductCard
+                product={product}
+                onAdd={() => onAddToCart(product)}
+                cartQuantity={cart.find(i => i.product.id === product.id)?.quantity ?? 0}
+              />
+            </div>
           ))}
         </div>
 

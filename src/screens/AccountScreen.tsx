@@ -55,7 +55,7 @@ export function AccountScreen({
     setCollapsedIds(new Set(getCollapsedOrderIds()));
   }, []);
 
-  const appUrl = 'https://maulena.netlify.app/';
+  const appUrl = 'https://calordemaule.vercel.app/';
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(appUrl)}`;
 
   const currentTab = tabs.find(t => t.key === activeTab)!;
@@ -581,8 +581,8 @@ export function AccountScreen({
 
       {/* Repeat order confirmation modal */}
       {orderToRepeat && (
-        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/55 px-5 py-8 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl">
+        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/55 px-5 py-8 backdrop-blur-sm animate-backdrop-in">
+          <div className="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl animate-modal-in">
             <div className="flex items-start justify-between gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <ShoppingCart className="h-6 w-6" />
@@ -636,8 +636,8 @@ export function AccountScreen({
 
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/55 px-5 py-8 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl">
+        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/55 px-5 py-8 backdrop-blur-sm animate-backdrop-in">
+          <div className="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl animate-modal-in">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-600 mb-4">
               <Trash2 className="h-6 w-6" />
             </div>
@@ -686,7 +686,7 @@ export function AccountScreen({
 
       {/* QR Full-screen overlay */}
       {showQR && (
-        <div className="fixed inset-0 z-[200] bg-surface/95 backdrop-blur-sm flex flex-col items-center justify-center p-8">
+        <div className="fixed inset-0 z-[200] bg-surface/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-backdrop-in">
           <button
             onClick={() => setShowQR(false)}
             className="absolute top-6 right-6 w-12 h-12 flex items-center justify-center rounded-full bg-surface-container-high hover:bg-surface-variant transition-colors"

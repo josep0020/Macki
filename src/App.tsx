@@ -137,6 +137,7 @@ export default function App() {
   return (
     <div className="bg-surface min-h-screen text-on-surface selection:bg-primary/20">
       {currentScreen === 'home' && (
+        <div key="home" className="animate-screen-in">
         <HomeScreen
           cart={cart}
           onGoToStore={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setCurrentScreen('catalog'); }}
@@ -144,8 +145,10 @@ export default function App() {
           theme={theme}
           onToggleTheme={toggleTheme}
         />
+        </div>
       )}
       {currentScreen === 'catalog' && (
+        <div key="catalog" className="animate-screen-in">
         <CatalogScreen
           cart={cart}
           comuna={comuna}
@@ -155,8 +158,10 @@ export default function App() {
           theme={theme}
           onToggleTheme={toggleTheme}
         />
+        </div>
       )}
       {currentScreen === 'checkout' && (
+        <div key="checkout" className="animate-screen-in">
         <CheckoutScreen
           cart={cart}
           comuna={comuna}
@@ -167,8 +172,10 @@ export default function App() {
           theme={theme}
           onToggleTheme={toggleTheme}
         />
+        </div>
       )}
       {currentScreen === 'orderConfirmation' && (
+        <div key="orderConfirmation" className="animate-screen-in">
         <OrderConfirmationScreen
           cart={cart}
           comuna={comuna}
@@ -177,8 +184,10 @@ export default function App() {
           theme={theme}
           onToggleTheme={toggleTheme}
         />
+        </div>
       )}
       {currentScreen === 'orderSuccess' && orderData && (
+        <div key="orderSuccess" className="animate-screen-in">
         <OrderSuccessScreen
           orderId={orderId}
           orderData={orderData}
@@ -188,8 +197,10 @@ export default function App() {
           theme={theme}
           onToggleTheme={toggleTheme}
         />
+        </div>
       )}
       {currentScreen === 'account' && (
+        <div key="account" className="animate-screen-in">
         <AccountScreen
           orders={orders}
           onRefresh={handleRefreshOrders}
@@ -198,6 +209,7 @@ export default function App() {
           theme={theme}
           onToggleTheme={toggleTheme}
         />
+        </div>
       )}
 
       {/* Bottom Navigation */}

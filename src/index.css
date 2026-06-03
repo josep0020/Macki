@@ -84,6 +84,77 @@ body {
   animation: theme-toggle 0.5s ease-in-out;
 }
 
+/* ── Screen transitions ── */
+@keyframes screen-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-screen-in {
+  animation: screen-in 400ms ease-out both;
+}
+
+/* ── Modal animations ── */
+@keyframes modal-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes modal-panel-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes modal-backdrop-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes modal-panel-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.95); }
+}
+.animate-backdrop-in {
+  animation: modal-backdrop-in 280ms ease-out both;
+}
+.animate-backdrop-out {
+  animation: modal-backdrop-out 180ms ease-in both;
+}
+.animate-modal-in {
+  animation: modal-panel-in 320ms ease-out both;
+  animation-delay: 60ms;
+}
+.animate-modal-out {
+  animation: modal-panel-out 200ms ease-in both;
+}
+
+/* ── Cart badge bounce ── */
+@keyframes badge-bounce {
+  0%   { transform: scale(0); }
+  50%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.animate-badge-bounce {
+  animation: badge-bounce 400ms ease-out both;
+}
+
+/* ── Stagger fade-in for lists ── */
+@keyframes stagger-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stagger-item {
+  opacity: 0;
+  animation: stagger-fade-in 300ms ease-out forwards;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* ── Bottom Navigation Bar ── */
 .bottom-nav {
   position: fixed;
@@ -128,16 +199,17 @@ body {
 
 .bottom-nav-label {
   font-family: var(--font-sans);
+  min-width: 40px;
+  text-align: center;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1;
   color: var(--color-on-surface-variant);
-  transition: color 0.2s ease, font-weight 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .bottom-nav-label.active {
   color: var(--color-primary);
-  font-weight: 600;
 }
 
 /* Small flame indicator below label */

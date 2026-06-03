@@ -41,7 +41,7 @@ export function BottomNavBar({ activeTab, onNavigate, cartItemCount }: BottomNav
                   isActive ? 'text-primary' : 'text-on-surface-variant'
                 }`} />
                 {tab.key === 'checkout' && cartItemCount > 0 && (
-                  <span className="bottom-nav-badge">
+                  <span key={cartItemCount} className="bottom-nav-badge animate-badge-bounce">
                     {cartItemCount > 9 ? '9+' : cartItemCount}
                   </span>
                 )}

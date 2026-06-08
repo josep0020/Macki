@@ -63,7 +63,7 @@ export const products: Product[] = [
     unit: 'litro',
     rating: 4.0,
     reviews: 22,
-    imageUrl: '/images/parafina.jpg',
+    imageUrl: '/images/parafina.webp',
     category: 'parafina'
   }
 ];

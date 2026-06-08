@@ -1,14 +1,24 @@
-import { useState, useEffect } from 'react';
-import { HomeScreen } from './screens/HomeScreen';
-import { CatalogScreen } from './screens/CatalogScreen';
-import { CheckoutScreen } from './screens/CheckoutScreen';
-import { OrderConfirmationScreen } from './screens/OrderConfirmationScreen';
-import { OrderSuccessScreen } from './screens/OrderSuccessScreen';
-import { AccountScreen } from './screens/AccountScreen';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BottomNavBar } from './components/BottomNavBar';
 import { CartItem, Product, Screen, OrderData, ThemeMode, TrackedOrder, OrderStatus } from './types';
 import { DEFAULT_COMUNA, getShippingCost, products } from './data';
 import { saveOrder, getOrders, simulateOrderProgress } from './utils/orders';
+
+const HomeScreen             = lazy(() => import('./screens/HomeScreen').then(m => ({ default: m.HomeScreen })));
+const CatalogScreen          = lazy(() => import('./screens/CatalogScreen').then(m => ({ default: m.CatalogScreen })));
+const CheckoutScreen         = lazy(() => import('./screens/CheckoutScreen').then(m => ({ default: m.CheckoutScreen })));
+const OrderConfirmationScreen = lazy(() => import('./screens/OrderConfirmationScreen').then(m => ({ default: m.OrderConfirmationScreen })));
+const OrderSuccessScreen     = lazy(() => import('./screens/OrderSuccessScreen').then(m => ({ default: m.OrderSuccessScreen })));
+const AccountScreen          = lazy(() => import('./screens/AccountScreen').then(m => ({ default: m.AccountScreen })));
+const ConsumptionCalculator  = lazy(() => import('./components/ConsumptionCalculator').then(m => ({ default: m.ConsumptionCalculator })));
+
+function ScreenFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+    </div>
+  );
+}
 
 // Screens where the bottom navbar should be visible
 const NAV_SCREENS: Screen[] = ['home', 'catalog', 'checkout', 'account'];
@@ -21,6 +31,7 @@ export default function App() {
   const [orderId, setOrderId] = useState<string>('');
   const [orders, setOrders] = useState<TrackedOrder[]>(() => getOrders());
   const [theme, setTheme] = useState<ThemeMode>('light');
+  const [showCalculator, setShowCalculator] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -136,6 +147,7 @@ export default function App() {
 
   return (
     <div className="bg-surface min-h-screen text-on-surface selection:bg-primary/20">
+      <Suspense fallback={<ScreenFallback />}>
       {currentScreen === 'home' && (
         <div key="home" className="animate-screen-in">
         <HomeScreen
@@ -144,6 +156,7 @@ export default function App() {
           onAddToCart={handleAddToCart}
           theme={theme}
           onToggleTheme={toggleTheme}
+          onOpenCalculator={() => setShowCalculator(true)}
         />
         </div>
       )}
@@ -220,6 +233,14 @@ export default function App() {
           cartItemCount={cartItemCount}
         />
       )}
+
+      {/* Consumption Calculator Modal */}
+      <ConsumptionCalculator
+        open={showCalculator}
+        onClose={() => setShowCalculator(false)}
+        onAddToCart={handleAddToCart}
+      />
+      </Suspense>
     </div>
   );
 }

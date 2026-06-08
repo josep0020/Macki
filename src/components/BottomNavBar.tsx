@@ -30,9 +30,11 @@ export function BottomNavBar({ activeTab, onNavigate, cartItemCount }: BottomNav
 
           return (
             <button
-              key={tab.key}
+              key={tab.key === 'checkout' ? `checkout-${cartItemCount}` : tab.key}
               onClick={() => onNavigate(tab.key)}
-              className={`bottom-nav-tab ${isActive ? 'is-active' : ''}`}
+              className={`bottom-nav-tab ${isActive ? 'is-active' : ''} ${
+                tab.key === 'checkout' && cartItemCount > 0 ? 'animate-nav-pop' : ''
+              }`}
               aria-label={tab.label}
               aria-current={isActive ? 'page' : undefined}
             >

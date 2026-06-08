@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Calculator, Flame, Package, Droplets, X, Building2, Home, Warehouse, ShoppingCart, Check } from 'lucide-react';
+import { Calculator, Flame, Package, Droplets, X, Building2, Home, Warehouse, ShoppingCart, Check, MapPin } from 'lucide-react';
 import { calculateConsumption, roundForCart, HeatingType, UsageLevel, HouseType } from '../utils/calculator';
 import { products } from '../data';
 import { Product } from '../types';
@@ -305,12 +305,11 @@ export function ConsumptionCalculator({ open, onClose, onAddToCart }: Consumptio
                     <p className="text-[10px] text-on-surface-variant">~${formatNumber(costs.parafina.monthly)}/mes</p>
                   </div>
                   <button
-                    onClick={() => handleAdd('parafina')}
-                    disabled={added === 'parafina'}
-                    className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-md transition-all hover:bg-primary-container active:scale-[0.98] disabled:opacity-70"
+                    onClick={() => window.open('https://www.google.com/maps/search/estaciones+de+servicio+copec+petrobras+shell+region+del+maule/', '_blank')}
+                    className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-md transition-all hover:bg-primary-container active:scale-[0.98]"
                   >
-                    {added === 'parafina' ? <Check className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
-                    {added === 'parafina' ? 'Agregado' : `Agregar ${costs.parafina.cartQty}`}
+                    <MapPin className="h-4 w-4" />
+                    Ver ubicaciones
                   </button>
                 </div>
               </div>

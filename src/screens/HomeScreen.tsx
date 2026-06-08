@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Flame, MapPin, ChevronRight, Droplets, Truck, ShieldCheck, TreePine, Thermometer, Award, Calculator } from 'lucide-react';
+import { Flame, MapPin, ChevronRight, ArrowRight, Droplets, Truck, ShieldCheck, TreePine, Thermometer, Award, Calculator, Check } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { BannerCarousel } from '../components/BannerCarousel';
 import { SeasonalAlert } from '../components/SeasonalAlert';
-import { ConsumptionCalculator } from '../components/ConsumptionCalculator';
 import { products } from '../data';
 import { ThemeMode, CartItem, Product } from '../types';
+import { AnimatedCounter } from '../components/AnimatedCounter';
+import { RollingText } from '../components/RollingText';
 
 interface HomeScreenProps {
   cart: CartItem[];
@@ -13,6 +14,7 @@ interface HomeScreenProps {
   onAddToCart: (product: Product) => void;
   theme: ThemeMode;
   onToggleTheme: () => void;
+  onOpenCalculator: () => void;
 }
 
 const features = [
@@ -40,8 +42,62 @@ const stats = [
   { value: '24hrs', label: 'Despacho', icon: Thermometer },
 ];
 
-export function HomeScreen({ onGoToStore, onAddToCart, theme, onToggleTheme }: HomeScreenProps) {
-  const [showCalculator, setShowCalculator] = useState(false);
+function FeaturedProductCard({ product, onAddToCart }: { product: Product; onAddToCart: (product: Product) => void }) {
+  const [justAdded, setJustAdded] = useState(false);
+
+  const handleAdd = () => {
+    onAddToCart(product);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 1200);
+  };
+
+  return (
+    <div className="min-w-[160px] max-w-[160px] bg-surface-container-lowest border border-outline-variant/30 rounded-xl overflow-hidden shadow-sm shrink-0 flex flex-col justify-between">
+      <div>
+        <div className="relative h-24 overflow-hidden">
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="w-full h-full object-cover"
+          />
+          {product.badge && (
+            <span className="absolute top-2 left-2 bg-secondary/90 text-on-secondary text-[10px] font-bold px-2 py-0.5 rounded-full">
+              {product.badge}
+            </span>
+          )}
+        </div>
+        <div className="p-3 pb-0">
+          <h4 className="text-xs font-semibold text-on-surface leading-tight line-clamp-2 min-h-[32px]">{product.name}</h4>
+          <p className="text-sm font-bold text-primary mt-1.5">
+            ${product.price.toLocaleString('es-CL')}
+            <span className="text-[10px] text-on-surface-variant font-normal">/{product.unit}</span>
+          </p>
+        </div>
+      </div>
+      <div className="p-3 pt-0">
+        <button
+          onClick={handleAdd}
+          className={`w-full mt-2 text-xs font-semibold py-1.5 rounded-lg transition-all active:scale-[0.97] flex items-center justify-center gap-1 ${
+            justAdded
+              ? 'bg-green-700 text-white'
+              : 'bg-primary/10 hover:bg-primary/20 text-primary'
+          }`}
+        >
+          {justAdded ? (
+            <>
+              <Check className="w-3.5 h-3.5" />
+              ¡Agregado!
+            </>
+          ) : (
+            'Agregar'
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function HomeScreen({ onGoToStore, onAddToCart, theme, onToggleTheme, onOpenCalculator }: HomeScreenProps) {
   const featured = products.filter(p => p.badge).slice(0, 3);
 
   return (
@@ -60,35 +116,36 @@ export function HomeScreen({ onGoToStore, onAddToCart, theme, onToggleTheme }: H
         <SeasonalAlert />
 
         {/* Hero */}
-        <section className="mt-6 relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-container p-6 pb-8">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-on-primary/20" />
-            <div className="absolute -bottom-12 -left-6 w-48 h-48 rounded-full bg-on-primary/10" />
-          </div>
+        <section
+          className="mt-6 relative overflow-hidden rounded-2xl bg-cover bg-center p-6 pb-8"
+          style={{ backgroundImage: "url('/images/renderizacion-3d-piezas-madera_23-2151340210.avif')" }}
+        >
+          {/* Overlay to ensure contrast */}
+          <div className="absolute inset-0 bg-black/35 z-0" />
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-1.5 bg-on-primary/15 backdrop-blur-sm rounded-full px-3 py-1 mb-4">
-              <TreePine className="w-3.5 h-3.5 text-on-primary" />
-              <span className="text-[11px] font-semibold text-on-primary tracking-wide uppercase">Región del Maule</span>
+            <div className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1 mb-4">
+              <TreePine className="w-3.5 h-3.5 text-white" />
+              <span className="text-[11px] font-bold text-white tracking-wide uppercase">Región del Maule</span>
             </div>
-            <h2 className="font-serif text-3xl text-on-primary font-bold leading-tight mb-2">
+            <h2 className="font-serif text-3xl text-white font-extrabold leading-tight mb-2">
               Calor que nace<br />de la tierra
             </h2>
-            <p className="text-on-primary/80 text-sm leading-relaxed mb-5 max-w-[260px]">
-              Leña certificada, seca y seleccionada. Directo del comerciante local a tu hogar.
-            </p>
+            <RollingText />
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 onClick={onGoToStore}
-                className="inline-flex items-center justify-center gap-2 bg-on-primary text-primary font-semibold text-sm px-5 py-3 rounded-xl shadow-lg hover:shadow-xl active:scale-[0.97] transition-all"
+                className="inline-flex items-center justify-center gap-2 bg-[#2d422a] hover:bg-[#233520] text-white font-semibold text-sm px-5 py-3 rounded-xl shadow-lg hover:shadow-xl active:scale-[0.97] transition-all cursor-pointer"
               >
                 Explorar Tienda
-                <ChevronRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 text-white" />
               </button>
               <button
-                onClick={() => setShowCalculator(true)}
-                className="inline-flex items-center justify-center gap-2 bg-on-primary/15 text-on-primary font-semibold text-sm px-5 py-3 rounded-xl border border-on-primary/20 backdrop-blur-sm hover:bg-on-primary/25 active:scale-[0.97] transition-all"
+                onClick={onOpenCalculator}
+                className="inline-flex items-center justify-center gap-2 bg-white/10 text-white font-semibold text-sm px-5 py-3 rounded-xl border border-white/20 backdrop-blur-md hover:bg-white/20 active:scale-[0.97] transition-all cursor-pointer"
               >
-                <Calculator className="w-4 h-4" />
+                <div className="bg-white/10 border border-white/20 p-1.5 rounded-lg flex items-center justify-center mr-1">
+                  <Calculator className="w-4 h-4 text-white" />
+                </div>
                 ¿Cuánto necesito?
               </button>
             </div>
@@ -98,37 +155,30 @@ export function HomeScreen({ onGoToStore, onAddToCart, theme, onToggleTheme }: H
         {/* Banner Carousel */}
         <BannerCarousel />
 
-        {/* Stats bar */}
-        <section className="mt-6 grid grid-cols-4 gap-2">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <div
-                key={stat.label}
-                className="flex flex-col items-center gap-1.5 bg-surface-container-lowest border border-outline-variant/30 rounded-xl py-3 px-1"
-              >
-                <Icon className="w-4.5 h-4.5 text-primary" />
-                <span className="text-lg font-bold text-on-surface leading-none">{stat.value}</span>
-                <span className="text-[10px] text-on-surface-variant font-medium">{stat.label}</span>
-              </div>
-            );
-          })}
+        {/* Stats */}
+        <section className="mt-6 flex items-center justify-between bg-surface-container-low rounded-2xl px-4 py-4">
+          {stats.map((stat, i) => (
+            <div key={stat.label} className="flex items-center flex-1 justify-center">
+              <AnimatedCounter value={stat.value} label={stat.label} />
+              {i < stats.length - 1 && (
+                <div className="w-px h-8 bg-outline-variant/40 ml-2" />
+              )}
+            </div>
+          ))}
         </section>
 
         {/* Features */}
         <section className="mt-8">
           <h3 className="font-serif text-xl text-on-surface font-bold mb-4">¿Por qué elegirnos?</h3>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {features.map((feat) => {
               const Icon = feat.icon;
               return (
                 <div
                   key={feat.title}
-                  className="flex items-start gap-4 bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                  className="flex items-start gap-3 border-l-2 border-primary/40 pl-4 py-1"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <Icon className="w-5 h-5 text-primary" />
-                  </div>
+                  <Icon className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <div>
                     <h4 className="text-sm font-semibold text-on-surface">{feat.title}</h4>
                     <p className="text-xs text-on-surface-variant mt-0.5 leading-relaxed">{feat.desc}</p>
@@ -153,36 +203,11 @@ export function HomeScreen({ onGoToStore, onAddToCart, theme, onToggleTheme }: H
             </div>
             <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-6 px-6 pb-2">
               {featured.map(product => (
-                <div
+                <FeaturedProductCard
                   key={product.id}
-                  className="min-w-[160px] max-w-[160px] bg-surface-container-lowest border border-outline-variant/30 rounded-xl overflow-hidden shadow-sm shrink-0"
-                >
-                  <div className="relative h-24 overflow-hidden">
-                    <img
-                      src={product.imageUrl}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                    {product.badge && (
-                      <span className="absolute top-2 left-2 bg-secondary/90 text-on-secondary text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {product.badge}
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <h4 className="text-xs font-semibold text-on-surface leading-tight line-clamp-2">{product.name}</h4>
-                    <p className="text-sm font-bold text-primary mt-1.5">
-                      ${product.price.toLocaleString('es-CL')}
-                      <span className="text-[10px] text-on-surface-variant font-normal">/{product.unit}</span>
-                    </p>
-                    <button
-                      onClick={() => onAddToCart(product)}
-                      className="w-full mt-2 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold py-1.5 rounded-lg transition-colors active:scale-[0.97]"
-                    >
-                      Agregar
-                    </button>
-                  </div>
-                </div>
+                  product={product}
+                  onAddToCart={onAddToCart}
+                />
               ))}
             </div>
           </section>
@@ -205,8 +230,6 @@ export function HomeScreen({ onGoToStore, onAddToCart, theme, onToggleTheme }: H
           </div>
         </section>
       </main>
-
-      <ConsumptionCalculator open={showCalculator} onClose={() => setShowCalculator(false)} onAddToCart={onAddToCart} />
     </div>
   );
 }

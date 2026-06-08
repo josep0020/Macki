@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Product } from '../types';
-import { Star, ShoppingCart, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, ShoppingCart, Check, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -98,26 +98,36 @@ export function ProductCard({ product, onAdd, cartQuantity }: ProductCardProps) 
             <span className="text-sm text-on-surface-variant">/ {product.unit}</span>
           </div>
         </div>
-        <button
-          onClick={handleAdd}
-          className={`w-full font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
-            justAdded
-              ? 'bg-green-700 text-white'
-              : 'bg-primary hover:bg-primary-container text-on-primary'
-          }`}
-        >
-          {justAdded ? (
-            <>
-              <Check className="w-5 h-5" />
-              ¡Agregado!
-            </>
-          ) : (
-            <>
-              <ShoppingCart className="w-5 h-5" />
-              Añadir al Carrito
-            </>
-          )}
-        </button>
+        {product.category === 'parafina' ? (
+          <button
+            onClick={() => window.open('https://www.google.com/maps/search/estaciones+de+servicio+copec+petrobras+shell+region+del+maule/', '_blank')}
+            className="w-full font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] bg-primary hover:bg-primary-container text-on-primary"
+          >
+            <MapPin className="w-5 h-5" />
+            Ver ubicaciones en el Maule
+          </button>
+        ) : (
+          <button
+            onClick={handleAdd}
+            className={`w-full font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
+              justAdded
+                ? 'bg-green-700 text-white'
+                : 'bg-primary hover:bg-primary-container text-on-primary'
+            }`}
+          >
+            {justAdded ? (
+              <>
+                <Check className="w-5 h-5" />
+                ¡Agregado!
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="w-5 h-5" />
+                Añadir al Carrito
+              </>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 const phrases = [
   'Leña 100% certificada y seca.',
-  'Despacho en 24 hrs a domicilio.',
+  'Leña con menos de 25% de humedad.',
   '16 comunas de la Región del Maule.',
   'Directo del productor local.',
 ];

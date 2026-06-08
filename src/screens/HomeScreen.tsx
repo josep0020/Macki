@@ -39,7 +39,7 @@ const stats = [
   { value: '16', label: 'Comunas', icon: MapPin },
   { value: '30+', label: 'Comerciantes', icon: Award },
   { value: '100%', label: 'Certificada', icon: TreePine },
-  { value: '24hrs', label: 'Despacho', icon: Thermometer },
+  { value: '<25%', label: 'Humedad', icon: Thermometer },
 ];
 
 function FeaturedProductCard({ product, onAddToCart }: { product: Product; onAddToCart: (product: Product) => void }) {

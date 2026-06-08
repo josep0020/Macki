@@ -168,24 +168,25 @@ body {
 /* ── Bottom Navigation Bar ── */
 .bottom-nav {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
   z-index: 100;
   background-color: var(--color-surface-container-lowest);
-  border-top: 1px solid var(--color-outline-variant);
-  box-shadow: 0 -4px 16px rgba(74, 58, 47, 0.08);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(74, 58, 47, 0.12);
+  max-width: calc(28rem - 32px);
+  margin: 0 auto;
 }
 
 .bottom-nav-inner {
-  max-width: 28rem;
-  margin: 0 auto;
+  max-width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 0 0.5rem;
-  height: 64px;
+  padding: 0 1rem;
+  height: 60px;
 }
 
 .bottom-nav-tab {
@@ -261,7 +262,8 @@ body {
 
 /* Dark mode shadow adjustments */
 .dark .bottom-nav {
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 /* ── Banner Carousel (Card-based) ── */

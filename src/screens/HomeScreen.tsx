@@ -52,35 +52,35 @@ function FeaturedProductCard({ product, onAddToCart }: { product: Product; onAdd
   };
 
   return (
-    <div className="min-w-[160px] max-w-[160px] bg-surface-container-lowest border border-outline-variant/30 rounded-xl overflow-hidden shadow-sm shrink-0 flex flex-col justify-between">
+    <div className="min-w-[160px] max-w-[160px] bg-surface-container-lowest border border-outline-variant/30 rounded-[24px] overflow-hidden shadow-sm shrink-0 flex flex-col justify-between">
       <div>
-        <div className="relative h-24 overflow-hidden">
+        <div className="relative h-24 overflow-hidden rounded-t-[24px]">
           <img
             src={product.imageUrl}
             alt={product.name}
             className="w-full h-full object-cover"
           />
           {product.badge && (
-            <span className="absolute top-2 left-2 bg-secondary/90 text-on-secondary text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="absolute top-2 left-2 bg-black/40 backdrop-blur-sm text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full">
               {product.badge}
             </span>
           )}
         </div>
         <div className="p-3 pb-0">
-          <h4 className="text-xs font-semibold text-on-surface leading-tight line-clamp-2 min-h-[32px]">{product.name}</h4>
-          <p className="text-sm font-bold text-primary mt-1.5">
+          <h4 className="font-serif text-sm font-bold text-on-surface leading-tight line-clamp-1">{product.name}</h4>
+          <p className="font-serif text-[15px] font-bold text-on-surface mt-1">
             ${product.price.toLocaleString('es-CL')}
-            <span className="text-[10px] text-on-surface-variant font-normal">/{product.unit}</span>
+            <span className="text-[10px] text-on-surface-variant font-normal font-sans ml-1">/{product.unit}</span>
           </p>
         </div>
       </div>
       <div className="p-3 pt-0">
         <button
           onClick={handleAdd}
-          className={`w-full mt-2 text-xs font-semibold py-1.5 rounded-lg transition-all active:scale-[0.97] flex items-center justify-center gap-1 ${
+          className={`w-full mt-2 text-xs font-semibold py-2 px-4 rounded-full border transition-all active:scale-[0.97] flex items-center justify-center gap-1 cursor-pointer ${
             justAdded
-              ? 'bg-green-700 text-white'
-              : 'bg-primary/10 hover:bg-primary/20 text-primary'
+              ? 'bg-green-700 text-white border-green-700'
+              : 'bg-white hover:bg-surface-container-low text-on-surface border-outline-variant/60 shadow-sm'
           }`}
         >
           {justAdded ? (
@@ -215,15 +215,17 @@ export function HomeScreen({ onGoToStore, onAddToCart, theme, onToggleTheme, onO
 
         {/* CTA */}
         <section className="mt-8 mb-4">
-          <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-5 text-center">
-            <Flame className="w-8 h-8 text-primary mx-auto mb-3 fill-primary/20" />
-            <h3 className="font-serif text-lg text-on-surface font-bold mb-1">¿Listo para abrigarte?</h3>
-            <p className="text-xs text-on-surface-variant mb-4">
+          <div className="bg-surface-container-low border border-outline-variant/30 rounded-3xl p-6 text-center shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center mx-auto mb-4 border border-outline-variant/10 dark:bg-surface-container-high">
+              <Flame className="w-5 h-5 text-[#334529] fill-none" />
+            </div>
+            <h3 className="font-serif text-xl text-on-surface font-extrabold mb-1">¿Listo para abrigarte?</h3>
+            <p className="text-xs text-on-surface-variant mb-5 leading-relaxed max-w-[240px] mx-auto">
               Revisa nuestro catálogo completo de leña, pellet y parafina.
             </p>
             <button
               onClick={onGoToStore}
-              className="bg-primary text-on-primary font-semibold text-sm px-6 py-3 rounded-xl shadow-md hover:bg-primary-container active:scale-[0.97] transition-all"
+              className="bg-[#334529] hover:bg-[#283720] text-white font-semibold text-sm px-8 py-3 rounded-full shadow-md hover:shadow-lg active:scale-[0.97] transition-all cursor-pointer dark:bg-primary dark:text-on-primary dark:hover:bg-primary-container"
             >
               Ir a la Tienda
             </button>

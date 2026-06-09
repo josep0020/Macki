@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Calculator, Flame, Package, Droplets, X, Building2, Home, Warehouse, ShoppingCart, Check, MapPin } from 'lucide-react';
 import { calculateConsumption, roundForCart, HeatingType, UsageLevel, HouseType } from '../utils/calculator';
 import { products } from '../data';
@@ -77,6 +77,15 @@ export function ConsumptionCalculator({ open, onClose, onAddToCart }: Consumptio
       },
     };
   }, [results, selectedLena, totalMonths]);
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [open]);
 
   if (!open) return null;
 

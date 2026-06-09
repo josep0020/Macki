@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X, Clock, Truck, Package, CheckCircle2, MapPin, User, Phone, FileText,
   ShoppingCart, Share2, Printer, Receipt, AlertTriangle
@@ -22,6 +23,13 @@ export function OrderDetailModal({ order, onClose, onRepeatOrder }: OrderDetailM
 
   const config = statusConfig[order.status];
   const StatusIcon = config.icon;
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
 
   const createdDate = new Date(order.createdAt).toLocaleDateString('es-CL', {
     day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
@@ -143,7 +151,7 @@ export function OrderDetailModal({ order, onClose, onRepeatOrder }: OrderDetailM
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/55 px-4 py-6 backdrop-blur-sm animate-backdrop-in">
       <div className="w-full max-w-md max-h-[90vh] overflow-hidden rounded-3xl bg-surface shadow-2xl flex flex-col animate-modal-in">
         {/* Header */}
@@ -280,6 +288,7 @@ export function OrderDetailModal({ order, onClose, onRepeatOrder }: OrderDetailM
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

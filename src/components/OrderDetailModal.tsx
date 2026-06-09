@@ -19,17 +19,17 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; bg: stri
 };
 
 export function OrderDetailModal({ order, onClose, onRepeatOrder }: OrderDetailModalProps) {
-  if (!order) return null;
-
-  const config = statusConfig[order.status];
-  const StatusIcon = config.icon;
-
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
     };
   }, []);
+
+  if (!order) return null;
+
+  const config = statusConfig[order.status];
+  const StatusIcon = config.icon;
 
   const createdDate = new Date(order.createdAt).toLocaleDateString('es-CL', {
     day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',

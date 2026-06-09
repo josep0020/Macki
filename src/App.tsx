@@ -235,11 +235,13 @@ export default function App() {
       )}
 
       {/* Consumption Calculator Modal */}
-      <ConsumptionCalculator
-        open={showCalculator}
-        onClose={() => setShowCalculator(false)}
-        onAddToCart={handleAddToCart}
-      />
+      {showCalculator && (
+        <ConsumptionCalculator
+          open={showCalculator}
+          onClose={() => setShowCalculator(false)}
+          onAddToCart={handleAddToCart}
+        />
+      )}
       </Suspense>
     </div>
   );

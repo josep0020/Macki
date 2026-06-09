@@ -79,13 +79,11 @@ export function ConsumptionCalculator({ open, onClose, onAddToCart }: Consumptio
   }, [results, selectedLena, totalMonths]);
 
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = '';
-      };
-    }
-  }, [open]);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
 
   if (!open) return null;
 

@@ -573,11 +573,13 @@ export function AccountScreen({
       </main>
 
       {/* Order Detail Modal */}
-      <OrderDetailModal
-        order={selectedOrder}
-        onClose={() => setSelectedOrder(null)}
-        onRepeatOrder={(order) => { onRepeatOrder(order); setSelectedOrder(null); }}
-      />
+      {selectedOrder && (
+        <OrderDetailModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          onRepeatOrder={(order) => { onRepeatOrder(order); setSelectedOrder(null); }}
+        />
+      )}
 
       {/* Repeat order confirmation modal */}
       {orderToRepeat && (

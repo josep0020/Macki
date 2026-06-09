@@ -16,6 +16,8 @@ interface CatalogScreenProps {
   onGoToCheckout: () => void;
   theme: ThemeMode;
   onToggleTheme: () => void;
+  favorites: string[];
+  onToggleFavorite: (productId: string) => void;
 }
 
 const categories: { key: CategoryFilter; label: string }[] = [
@@ -23,16 +25,19 @@ const categories: { key: CategoryFilter; label: string }[] = [
   { key: 'leña', label: 'Leña' },
   { key: 'pellet', label: 'Pellet' },
   { key: 'parafina', label: 'Parafina' },
+  { key: 'favoritos', label: 'Favoritos' },
 ];
 
-export function CatalogScreen({ cart, comuna, onComunaChange, onAddToCart, onGoToCheckout, theme, onToggleTheme }: CatalogScreenProps) {
+export function CatalogScreen({ cart, comuna, onComunaChange, onAddToCart, onGoToCheckout, theme, onToggleTheme, favorites, onToggleFavorite }: CatalogScreenProps) {
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>('todos');
   const [locationOpen, setLocationOpen] = useState(false);
   const [showMerchants, setShowMerchants] = useState(false);
 
-  const filteredProducts = activeCategory === 'todos'
-    ? products
-    : products.filter(p => p.category === activeCategory);
+  const filteredProducts = activeCategory === 'favoritos'
+    ? products.filter(p => favorites.includes(p.id))
+    : activeCategory === 'todos'
+      ? products
+      : products.filter(p => p.category === activeCategory);
 
   const merchants = merchantsByComuna[comuna] ?? [];
 
@@ -70,13 +75,15 @@ export function CatalogScreen({ cart, comuna, onComunaChange, onAddToCart, onGoT
           {filteredProducts.map((product, idx) => (
             <div
               key={product.id}
-              className="stagger-item"
+              className="stagger-item h-full"
               style={{ animationDelay: `${idx * 30}ms` }}
             >
               <ProductCard
                 product={product}
                 onAdd={() => onAddToCart(product)}
                 cartQuantity={cart.find(i => i.product.id === product.id)?.quantity ?? 0}
+                isFavorite={favorites.includes(product.id)}
+                onToggleFavorite={() => onToggleFavorite(product.id)}
               />
             </div>
           ))}

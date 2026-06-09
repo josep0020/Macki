@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, User, Phone, MapPin, FileText, Sparkles } from 'lucide-react';
+import { ArrowLeft, User, Phone, MapPin, FileText, Sparkles, CalendarDays } from 'lucide-react';
 import { CartItem, OrderData, ThemeMode } from '../types';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { getShippingCost } from '../data';
@@ -19,7 +19,22 @@ export function OrderConfirmationScreen({ cart, comuna, onConfirm, onGoBack, the
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('Sin preferencia');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDate = tomorrow.toISOString().split('T')[0];
+  const maxDateObj = new Date();
+  maxDateObj.setDate(maxDateObj.getDate() + 14);
+  const maxDate = maxDateObj.toISOString().split('T')[0];
+
+  const timeSlots = [
+    'Mañana (9:00 - 13:00)',
+    'Tarde (14:00 - 18:00)',
+    'Sin preferencia',
+  ];
 
   const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   const { cost: shippingCost } = getShippingCost(comuna, subtotal);
@@ -36,7 +51,14 @@ export function OrderConfirmationScreen({ cart, comuna, onConfirm, onGoBack, the
 
   const handleSubmit = () => {
     if (validate()) {
-      onConfirm({ name: name.trim(), phone: phone.trim(), address: address.trim(), notes: notes.trim() });
+      onConfirm({
+        name: name.trim(),
+        phone: phone.trim(),
+        address: address.trim(),
+        notes: notes.trim(),
+        deliveryDate: deliveryDate || undefined,
+        deliveryTimeSlot: deliveryTimeSlot,
+      });
     }
   };
 
@@ -105,6 +127,37 @@ export function OrderConfirmationScreen({ cart, comuna, onConfirm, onGoBack, the
             <div className="relative">
               <FileText className="absolute left-4 top-4 text-on-surface-variant w-5 h-5" />
               <textarea value={notes} onChange={e => setNotes(e.target.value)} className="w-full bg-surface-container-lowest border border-outline-variant shadow-sm rounded-xl py-4 pl-12 pr-4 text-sm text-on-surface placeholder:text-on-surface-variant transition-all outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none" rows={3} placeholder="Instrucciones de entrega, horario preferido, etc." />
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-on-surface mb-2 block">Fecha de Entrega</label>
+            <div className="relative mb-4">
+              <CalendarDays className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
+              <input
+                type="date"
+                value={deliveryDate}
+                onChange={e => setDeliveryDate(e.target.value)}
+                min={minDate}
+                max={maxDate}
+                className="w-full bg-surface-container-lowest border border-outline-variant shadow-sm rounded-xl py-4 pl-12 pr-4 text-sm text-on-surface placeholder:text-on-surface-variant transition-all outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <label className="text-sm font-semibold text-on-surface mb-2 block">Horario Preferido</label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {timeSlots.map(slot => (
+                <button
+                  key={slot}
+                  type="button"
+                  onClick={() => setDeliveryTimeSlot(slot)}
+                  className={`flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                    deliveryTimeSlot === slot
+                      ? 'bg-primary text-on-primary'
+                      : 'bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:border-primary/60'
+                  }`}
+                >
+                  {slot}
+                </button>
+              ))}
             </div>
           </div>
           <section className="bg-surface-container-low rounded-2xl p-6 flex flex-col gap-3 shadow-sm border border-outline-variant/30">

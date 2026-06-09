@@ -80,7 +80,7 @@ function FeaturedProductCard({ product, onAddToCart }: { product: Product; onAdd
           className={`w-full mt-2 text-xs font-semibold py-2 px-4 rounded-full border transition-all active:scale-[0.97] flex items-center justify-center gap-1 cursor-pointer ${
             justAdded
               ? 'bg-green-700 text-white border-green-700'
-              : 'bg-white hover:bg-surface-container-low text-neutral-900 border-outline-variant/60 shadow-sm'
+              : 'bg-white hover:bg-neutral-100 text-neutral-900 border-outline-variant/60 shadow-sm'
           }`}
         >
           {justAdded ? (

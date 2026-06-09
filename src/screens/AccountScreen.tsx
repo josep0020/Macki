@@ -1,20 +1,16 @@
 import {
-  Flame, Moon, Sun, MapPin, Phone, Mail, ChevronRight, ExternalLink,
-  Package, RefreshCw, QrCode, X, ShoppingCart, ChevronDown, ChevronUp,
-  Edit3, Trash2, Check, Minus
+  Flame, MapPin, Phone, Mail, ChevronRight, ExternalLink,
+  Package, RefreshCw, X, ShoppingCart, ChevronDown, ChevronUp,
+  Edit3, Trash2, Check, User, Share2
 } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { OrderTracker } from '../components/OrderTracker';
 import { OrderDetailModal } from '../components/OrderDetailModal';
+import { LoyaltyCard } from '../components/LoyaltyCard';
 import { ThemeMode, TrackedOrder, OrderStatus } from '../types';
 import { useState, useEffect } from 'react';
 import { estimateDepletionDate, formatDepletionDate } from '../utils/reorderEstimator';
-import {
-  getCollapsedOrderIds,
-  toggleOrderCollapsed,
-  setAllOrdersCollapsed,
-} from '../utils/collapsedOrders';
 import { deleteOrders } from '../utils/orders';
+import { comunas } from '../data';
 
 interface AccountScreenProps {
   orders: TrackedOrder[];
@@ -25,46 +21,75 @@ interface AccountScreenProps {
   onToggleTheme: () => void;
 }
 
-const tabs: { key: 'activos' | 'historicos'; label: string; filter: OrderStatus[] }[] = [
-  { key: 'activos', label: 'Activos', filter: ['pendiente', 'en_camino'] },
-  { key: 'historicos', label: 'Históricos', filter: ['entregado'] },
-];
+interface UserProfile {
+  name: string;
+  phone: string;
+  address: string;
+}
 
 export function AccountScreen({
   orders,
   onRefresh,
-  onSimulateProgress,
   onRepeatOrder,
   theme,
   onToggleTheme,
 }: AccountScreenProps) {
+  const [activeMainTab, setActiveMainTab] = useState<'pedidos' | 'fidelidad' | 'soporte'>('pedidos');
   const [showQR, setShowQR] = useState(false);
   const [orderToRepeat, setOrderToRepeat] = useState<TrackedOrder | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<TrackedOrder | null>(null);
-  const [activeTab, setActiveTab] = useState<'activos' | 'historicos'>('activos');
 
-  // Edit mode (only for historicos)
-  const [isEditing, setIsEditing] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Profile states
+  const [profile, setProfile] = useState<UserProfile>(() => {
+    const raw = localStorage.getItem('maule-lena-profile');
+    if (raw) {
+      try {
+        return JSON.parse(raw) as UserProfile;
+      } catch {}
+    }
+    // Fallback to last order if exists
+    if (orders.length > 0) {
+      return {
+        name: orders[0].customerName || '',
+        phone: orders[0].customerPhone || '',
+        address: orders[0].customerAddress || '',
+      };
+    }
+    return { name: '', phone: '', address: '' };
+  });
+
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editName, setEditName] = useState(profile.name);
+  const [editPhone, setEditPhone] = useState(profile.phone);
+  const [editAddress, setEditAddress] = useState(profile.address);
+
+  // Sync edits when profile changes
+  useEffect(() => {
+    setEditName(profile.name);
+    setEditPhone(profile.phone);
+    setEditAddress(profile.address);
+  }, [profile]);
+
+  // Edit mode (delete orders)
+  const [isEditingOrders, setIsEditingOrders] = useState(false);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Collapsed state (persisted)
-  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    setCollapsedIds(new Set(getCollapsedOrderIds()));
-  }, []);
+  // Coverage Dropdown
+  const [showCoverage, setShowCoverage] = useState(false);
 
   const appUrl = 'https://calordemaule.vercel.app/';
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(appUrl)}`;
 
-  const currentTab = tabs.find(t => t.key === activeTab)!;
-  const filteredOrders = orders.filter(o => currentTab.filter.includes(o.status));
-  const historicOrders = orders.filter(o => o.status === 'entregado');
+  const handleSaveProfile = () => {
+    const newProfile = { name: editName.trim(), phone: editPhone.trim(), address: editAddress.trim() };
+    localStorage.setItem('maule-lena-profile', JSON.stringify(newProfile));
+    setProfile(newProfile);
+    setIsEditingProfile(false);
+  };
 
-  const handleToggleCollapse = (orderId: string) => {
-    toggleOrderCollapsed(orderId);
-    setCollapsedIds(prev => {
+  const handleToggleSelectOrder = (orderId: string) => {
+    setSelectedOrderIds(prev => {
       const next = new Set(prev);
       if (next.has(orderId)) next.delete(orderId);
       else next.add(orderId);
@@ -72,49 +97,27 @@ export function AccountScreen({
     });
   };
 
-  const handleCollapseAll = (collapse: boolean) => {
-    const ids = filteredOrders.map(o => o.id);
-    setAllOrdersCollapsed(ids, collapse);
-    setCollapsedIds(prev => {
-      const next = new Set(prev);
-      ids.forEach(id => {
-        if (collapse) next.add(id);
-        else next.delete(id);
-      });
-      return next;
-    });
-  };
-
-  const handleToggleSelect = (orderId: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(orderId)) next.delete(orderId);
-      else next.add(orderId);
-      return next;
-    });
-  };
-
-  const handleSelectAll = () => {
-    const allSelected = filteredOrders.every(o => selectedIds.has(o.id));
+  const handleSelectAllOrders = () => {
+    const allSelected = orders.every(o => selectedOrderIds.has(o.id));
     if (allSelected) {
-      setSelectedIds(new Set());
+      setSelectedOrderIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredOrders.map(o => o.id)));
+      setSelectedOrderIds(new Set(orders.map(o => o.id)));
     }
   };
 
-  const handleDelete = () => {
-    if (selectedIds.size === 0) return;
-    deleteOrders(Array.from(selectedIds));
-    setSelectedIds(new Set());
-    setIsEditing(false);
+  const handleDeleteOrders = () => {
+    if (selectedOrderIds.size === 0) return;
+    deleteOrders(Array.from(selectedOrderIds));
+    setSelectedOrderIds(new Set());
+    setIsEditingOrders(false);
     setShowDeleteConfirm(false);
     onRefresh();
   };
 
-  const cancelEditing = () => {
-    setIsEditing(false);
-    setSelectedIds(new Set());
+  const cancelEditingOrders = () => {
+    setIsEditingOrders(false);
+    setSelectedOrderIds(new Set());
   };
 
   const formatDate = (dateStr: string) => {
@@ -125,333 +128,269 @@ export function AccountScreen({
     });
   };
 
-  const allSelected = filteredOrders.length > 0 && filteredOrders.every(o => selectedIds.has(o.id));
+  const allOrdersSelected = orders.length > 0 && orders.every(o => selectedOrderIds.has(o.id));
+  const depletionOrder = orders.find(o => o.status === 'entregado');
+  const depletion = depletionOrder ? estimateDepletionDate(depletionOrder) : null;
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-32">
       <header className="bg-surface sticky top-0 z-50 flex justify-between items-center w-full px-4 py-3 shadow-sm">
         <div className="w-10" />
         <div className="flex items-center gap-2">
-          <Flame className="text-primary w-7 h-7 fill-primary" />
-          <h1 className="font-serif text-2xl text-primary font-bold tracking-tight">Mi Cuenta</h1>
+          <Flame className="text-primary w-6 h-6 fill-primary" />
+          <h1 className="text-xl text-primary font-bold tracking-tight">Mi Cuenta</h1>
         </div>
         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </header>
 
-      <main className="max-w-md mx-auto px-6 mt-6">
-        {/* Avatar / Brand Section */}
-        <section className="flex flex-col items-center text-center mb-8">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center mb-4 shadow-lg">
-            <Flame className="w-10 h-10 text-on-primary fill-on-primary/20" />
-          </div>
-          <h2 className="font-serif text-2xl text-on-surface font-bold">Maule Leña</h2>
-          <p className="text-sm text-on-surface-variant mt-1">Tu proveedor de calefaccion en la Region del Maule</p>
-        </section>
-
-        {/* Order Tracking Section */}
-        <section className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-serif text-lg text-on-surface font-bold flex items-center gap-2">
-              <Package className="w-5 h-5 text-primary" />
-              Mis Pedidos
-            </h3>
-            <div className="flex items-center gap-2">
-              {orders.length > 0 && (
+      <main className="max-w-md mx-auto px-6 mt-6 flex flex-col gap-6">
+        
+        {/* ── User Profile Section (Apple Style) ── */}
+        <section className="bg-surface-container-low/40 rounded-3xl p-5 border border-outline-variant/10 shadow-sm relative overflow-hidden transition-all duration-300">
+          {!isEditingProfile ? (
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg border border-primary/20 shrink-0 uppercase">
+                {profile.name ? profile.name.charAt(0) : <User className="w-5 h-5" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold text-on-surface truncate">
+                  {profile.name || 'Usuario Invitado'}
+                </h2>
+                <p className="text-xs text-on-surface-variant mt-0.5 font-medium">
+                  {profile.phone || 'Sin teléfono configurado'}
+                </p>
+                <p className="text-xs text-on-surface-variant/70 mt-1 leading-snug truncate">
+                  {profile.address || 'Sin dirección de entrega por defecto'}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsEditingProfile(true)}
+                className="text-xs font-bold text-primary hover:underline px-2.5 py-1.5 rounded-lg hover:bg-primary/5 transition-all"
+              >
+                Editar
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3.5">
+              <div className="flex items-center justify-between border-b border-outline-variant/10 pb-2">
+                <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider">
+                  Editar Datos de Despacho
+                </h3>
+              </div>
+              <div className="flex flex-col gap-2.5">
+                <input
+                  type="text"
+                  placeholder="Nombre completo"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-xs text-on-surface outline-none focus:border-primary transition-all"
+                />
+                <input
+                  type="text"
+                  placeholder="Teléfono (Ej: +56 9 1234 5678)"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-xs text-on-surface outline-none focus:border-primary transition-all"
+                />
+                <input
+                  type="text"
+                  placeholder="Dirección de entrega"
+                  value={editAddress}
+                  onChange={(e) => setEditAddress(e.target.value)}
+                  className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-xs text-on-surface outline-none focus:border-primary transition-all"
+                />
+              </div>
+              <div className="flex gap-2 justify-end mt-1.5">
                 <button
-                  onClick={onRefresh}
-                  className="text-xs text-primary flex items-center gap-1 hover:underline"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  Actualizar
-                </button>
-              )}
-              {activeTab === 'historicos' && historicOrders.length > 0 && !isEditing && (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="text-xs font-semibold text-primary bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors flex items-center gap-1"
-                >
-                  <Edit3 className="w-3 h-3" />
-                  Editar
-                </button>
-              )}
-              {isEditing && (
-                <button
-                  onClick={cancelEditing}
-                  className="text-xs font-semibold text-on-surface-variant bg-surface-container-high px-3 py-1.5 rounded-lg hover:bg-surface-variant transition-colors"
+                  onClick={() => setIsEditingProfile(false)}
+                  className="text-xs font-semibold px-4 py-2.5 rounded-xl border border-outline-variant/50 hover:bg-surface-container text-on-surface transition-all cursor-pointer"
                 >
                   Cancelar
                 </button>
-              )}
+                <button
+                  onClick={handleSaveProfile}
+                  className="text-xs font-bold px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary shadow-sm transition-all cursor-pointer"
+                >
+                  Guardar
+                </button>
+              </div>
             </div>
-          </div>
+          )}
+        </section>
 
-          {orders.length === 0 ? (
-            <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-8 text-center">
-              <Package className="w-12 h-12 text-on-surface-variant/30 mx-auto mb-3" />
-              <p className="text-sm text-on-surface-variant">Aun no tienes pedidos</p>
-              <p className="text-xs text-on-surface-variant/60 mt-1">Cuando realices uno, aparecera aqui</p>
-            </div>
-          ) : (
-            <div>
-              {/* Tabs */}
-              <div className="flex gap-2 mb-4">
-                {tabs.map(tab => {
-                  const count = orders.filter(o => tab.filter.includes(o.status)).length;
-                  const active = activeTab === tab.key;
-                  return (
+        {/* ── Main Tab Navigation ── */}
+        <div className="flex bg-surface-container rounded-2xl p-1 shadow-sm">
+          <button
+            onClick={() => { setActiveMainTab('pedidos'); cancelEditingOrders(); }}
+            className={`flex-1 text-center py-3 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+              activeMainTab === 'pedidos'
+                ? 'bg-surface-container-lowest text-on-surface shadow-sm'
+                : 'text-on-surface-variant/80 hover:text-on-surface'
+            }`}
+          >
+            Pedidos
+          </button>
+          <button
+            onClick={() => { setActiveMainTab('fidelidad'); cancelEditingOrders(); }}
+            className={`flex-1 text-center py-3 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+              activeMainTab === 'fidelidad'
+                ? 'bg-surface-container-lowest text-on-surface shadow-sm'
+                : 'text-on-surface-variant/80 hover:text-on-surface'
+            }`}
+          >
+            Fidelidad
+          </button>
+          <button
+            onClick={() => { setActiveMainTab('soporte'); cancelEditingOrders(); }}
+            className={`flex-1 text-center py-3 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+              activeMainTab === 'soporte'
+                ? 'bg-surface-container-lowest text-on-surface shadow-sm'
+                : 'text-on-surface-variant/80 hover:text-on-surface'
+            }`}
+          >
+            Soporte
+          </button>
+        </div>
+
+        {/* ── Tab Content Area ── */}
+        <div className="flex flex-col gap-4">
+
+          {/* 1. PEDIDOS TAB */}
+          {activeMainTab === 'pedidos' && (
+            <div className="flex flex-col gap-4 animate-screen-in">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-widest">
+                  Historial de compras
+                </span>
+                <div className="flex items-center gap-2">
+                  {orders.length > 0 && !isEditingOrders && (
                     <button
-                      key={tab.key}
-                      onClick={() => { setActiveTab(tab.key); setIsEditing(false); setSelectedIds(new Set()); }}
-                      className={`flex-1 flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${
-                        active
-                          ? 'bg-primary text-on-primary shadow-sm'
-                          : 'bg-surface-container-high border border-outline-variant/30 text-on-surface-variant hover:bg-surface-variant'
-                      }`}
+                      onClick={() => setIsEditingOrders(true)}
+                      className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
                     >
-                      {tab.label}
-                      {count > 0 && (
-                        <span className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold ${
-                          active ? 'bg-on-primary/20 text-on-primary' : 'bg-primary/10 text-primary'
-                        }`}>
-                          {count}
-                        </span>
-                      )}
+                      <Edit3 className="w-3.5 h-3.5" />
+                      Editar
                     </button>
-                  );
-                })}
+                  )}
+                  {isEditingOrders && (
+                    <button
+                      onClick={cancelEditingOrders}
+                      className="text-xs font-bold text-on-surface-variant hover:underline cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* Collapse/Expand all */}
-              {filteredOrders.length > 0 && (
-                <div className="flex justify-end mb-2">
+              {/* Depletion recommendation card */}
+              {depletion && depletionOrder && !isEditingOrders && (
+                <div className="rounded-2xl bg-primary/5 border border-primary/15 p-4 flex flex-col gap-2.5 shadow-sm">
+                  <p className="text-xs text-on-surface-variant leading-relaxed">
+                    Tus <strong>{depletionOrder.items[0]?.quantity} {depletionOrder.items[0]?.unit}</strong> de{' '}
+                    <strong>{depletionOrder.items[0]?.name}</strong> cubrirán tu calefacción hasta aproximadamente el{' '}
+                    <strong>{formatDepletionDate(depletion)}</strong>.
+                  </p>
                   <button
-                    onClick={() => {
-                      const allCollapsed = filteredOrders.every(o => collapsedIds.has(o.id));
-                      handleCollapseAll(!allCollapsed);
-                    }}
-                    className="text-xs text-primary hover:underline flex items-center gap-1"
+                    onClick={() => setOrderToRepeat(depletionOrder)}
+                    className="self-start text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    {filteredOrders.every(o => collapsedIds.has(o.id)) ? (
-                      <>
-                        <ChevronDown className="w-3.5 h-3.5" />
-                        Expandir todos
-                      </>
-                    ) : (
-                      <>
-                        <ChevronUp className="w-3.5 h-3.5" />
-                        Contraer todos
-                      </>
-                    )}
+                    Programar siguiente despacho <ChevronRight className="w-3 h-3" />
                   </button>
                 </div>
               )}
 
-              {/* Select all (editing mode) */}
-              {isEditing && filteredOrders.length > 0 && (
-                <div className="flex items-center gap-3 mb-3 p-3 bg-surface-container-high rounded-xl">
-                  <button
-                    onClick={handleSelectAll}
-                    className={`flex h-5 w-5 items-center justify-center rounded border transition-colors ${
-                      allSelected
-                        ? 'bg-primary border-primary'
-                        : 'border-outline-variant bg-surface'
-                    }`}
-                  >
-                    {allSelected && <Check className="h-3.5 w-3.5 text-on-primary" />}
-                  </button>
-                  <span className="text-sm font-medium text-on-surface">
-                    {allSelected ? 'Deseleccionar todo' : 'Seleccionar todo'}
-                  </span>
-                  <span className="ml-auto text-xs text-on-surface-variant">
-                    {selectedIds.size} seleccionado{selectedIds.size !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              )}
-
-              {/* Orders list */}
-              {filteredOrders.length === 0 ? (
-                <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-8 text-center">
-                  <Package className="w-12 h-12 text-on-surface-variant/30 mx-auto mb-3" />
-                  <p className="text-sm text-on-surface-variant">No tienes pedidos {activeTab === 'activos' ? 'activos' : 'entregados'}</p>
+              {orders.length === 0 ? (
+                <div className="bg-surface-container-low/30 border border-outline-variant/10 rounded-3xl p-8 text-center">
+                  <Package className="w-10 h-10 text-on-surface-variant/40 mx-auto mb-2" />
+                  <p className="text-xs font-bold text-on-surface-variant">Aún no tienes pedidos</p>
+                  <p className="text-[10px] text-on-surface-variant/60 mt-1">Tus compras se reflejarán aquí</p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-4">
-                  {filteredOrders.map(order => {
-                    const isCollapsed = collapsedIds.has(order.id);
-                    const isSelected = selectedIds.has(order.id);
-                    const depletion = order.status === 'entregado' ? estimateDepletionDate(order) : null;
-
-                    return (
-                      <div key={order.id}>
-                        {/* Re-order banner for delivered orders */}
-                        {depletion && !isCollapsed && (
-                          <div className="mb-2 rounded-xl bg-blue-50 p-3 text-blue-800">
-                            <p className="text-xs leading-relaxed">
-                              Tus <strong>{order.items[0]?.quantity} {order.items[0]?.unit}</strong> de{' '}
-                              <strong>{order.items[0]?.name}</strong> cubriran tu calefaccion hasta aproximadamente el{' '}
-                              <strong>{formatDepletionDate(depletion)}</strong>.
-                            </p>
-                            <button
-                              onClick={() => setOrderToRepeat(order)}
-                              className="mt-2 text-xs font-semibold text-primary hover:underline"
-                            >
-                              ¿Programar siguiente despacho?
-                            </button>
-                          </div>
-                        )}
-
-                        <div
-                          className={`bg-surface-container-lowest border rounded-2xl shadow-sm transition-all ${
-                            isCollapsed
-                              ? 'border-outline-variant/20 p-3'
-                              : 'border-outline-variant/30 p-5'
+                <div className="flex flex-col gap-2.5">
+                  {/* Select All Row in Editing Mode */}
+                  {isEditingOrders && (
+                    <div className="flex items-center justify-between p-3 bg-surface-container rounded-2xl mb-1 text-xs">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={handleSelectAllOrders}
+                          className={`flex h-4.5 w-4.5 items-center justify-center rounded border transition-colors ${
+                            allOrdersSelected
+                              ? 'bg-primary border-primary'
+                              : 'border-outline-variant bg-surface'
                           }`}
                         >
-                          {/* Collapsed view */}
-                          {isCollapsed ? (
-                            <div className="flex items-center gap-3">
-                              {isEditing && (
-                                <button
-                                  onClick={() => handleToggleSelect(order.id)}
-                                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
-                                    isSelected
-                                      ? 'bg-primary border-primary'
-                                      : 'border-outline-variant bg-surface'
-                                  }`}
-                                >
-                                  {isSelected && <Check className="h-3.5 w-3.5 text-on-primary" />}
-                                </button>
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-serif text-sm font-bold text-primary">{order.id}</span>
-                                  <span className="text-xs text-on-surface-variant">{formatDate(order.createdAt)}</span>
-                                </div>
-                                <div className="flex items-center justify-between mt-0.5">
-                                  <span className="text-xs text-on-surface-variant">
-                                    {order.items.length} producto{order.items.length !== 1 ? 's' : ''}
-                                  </span>
-                                  <span className="text-sm font-bold text-on-surface">
-                                    ${order.total.toLocaleString('es-CL')}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                {order.status === 'entregado' && !isEditing && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedIds(new Set([order.id]));
-                                      setShowDeleteConfirm(true);
-                                    }}
-                                    className="flex h-8 w-8 items-center justify-center rounded-full text-red-500 hover:bg-red-50 transition-colors"
-                                    title="Eliminar pedido"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => handleToggleCollapse(order.id)}
-                                  className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-surface-variant transition-colors"
-                                >
-                                  <ChevronDown className="h-4 w-4 text-on-surface-variant" />
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="flex items-start gap-3">
-                                {isEditing && (
-                                  <button
-                                    onClick={() => handleToggleSelect(order.id)}
-                                    className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
-                                      isSelected
-                                        ? 'bg-primary border-primary'
-                                        : 'border-outline-variant bg-surface'
-                                    }`}
-                                  >
-                                    {isSelected && <Check className="h-3.5 w-3.5 text-on-primary" />}
-                                  </button>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <button
-                                    onClick={() => !isEditing && setSelectedOrder(order)}
-                                    className="w-full text-left"
-                                  >
-                                    <OrderTracker
-                                      status={order.status}
-                                      orderId={order.id}
-                                      createdAt={order.createdAt}
-                                    />
-                                  </button>
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0 mt-1">
-                                  {order.status === 'entregado' && !isEditing && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedIds(new Set([order.id]));
-                                        setShowDeleteConfirm(true);
-                                      }}
-                                      className="flex h-8 w-8 items-center justify-center rounded-full text-red-500 hover:bg-red-50 transition-colors"
-                                      title="Eliminar pedido"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </button>
-                                  )}
-                                  <button
-                                    onClick={() => handleToggleCollapse(order.id)}
-                                    className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-surface-variant transition-colors"
-                                  >
-                                    <ChevronUp className="h-4 w-4 text-on-surface-variant" />
-                                  </button>
-                                </div>
-                              </div>
+                          {allOrdersSelected && <Check className="h-3 w-3 text-on-primary" />}
+                        </button>
+                        <span className="font-semibold text-on-surface">Seleccionar todo</span>
+                      </div>
+                      <span className="font-semibold text-on-surface-variant/70">
+                        {selectedOrderIds.size} seleccionados
+                      </span>
+                    </div>
+                  )}
 
-                              {/* Order items summary */}
-                              <div className="mt-4 pt-4 border-t border-outline-variant/30">
-                                <div className="flex flex-col gap-1">
-                                  {order.items.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between text-xs">
-                                      <span className="text-on-surface-variant">
-                                        {item.quantity} {item.unit} x {item.name}
-                                      </span>
-                                      <span className="text-on-surface font-medium">
-                                        ${(item.price * item.quantity).toLocaleString('es-CL')}
-                                      </span>
-                                    </div>
-                                  ))}
-                                  <div className="flex justify-between text-xs pt-2 mt-1 border-t border-outline-variant/30">
-                                    <span className="text-on-surface-variant">Despacho</span>
-                                    <span className="text-on-surface font-medium">
-                                      {order.shippingCost === 0 ? 'Gratis' : `$${order.shippingCost.toLocaleString('es-CL')}`}
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between text-sm font-bold pt-1">
-                                    <span className="text-on-surface">Total</span>
-                                    <span className="text-primary">${order.total.toLocaleString('es-CL')}</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {!isEditing && (
-                                <div className="mt-3 flex items-center gap-2 text-xs text-primary font-medium">
-                                  <ChevronRight className="w-3.5 h-3.5" />
-                                  Ver detalle
-                                </div>
-                              )}
-
-                              {/* Simulate progress (demo only) */}
-                              {order.status !== 'entregado' && !isEditing && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); onSimulateProgress(order.id); }}
-                                  className="mt-3 w-full text-xs text-primary border border-primary/30 rounded-xl py-2 hover:bg-primary/5 transition-colors"
-                                >
-                                  Simular avance de estado (demo)
-                                </button>
-                              )}
-                            </>
+                  {orders.map(order => {
+                    const isSelected = selectedOrderIds.has(order.id);
+                    return (
+                      <div
+                        key={order.id}
+                        onClick={() => !isEditingOrders && setSelectedOrder(order)}
+                        className={`flex items-center justify-between p-4 bg-surface-container-low/30 hover:bg-surface-container-low/60 rounded-2xl transition-all border border-outline-variant/10 shadow-sm relative ${
+                          isEditingOrders ? '' : 'cursor-pointer active:scale-[0.99]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {isEditingOrders && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleSelectOrder(order.id);
+                              }}
+                              className={`flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded border transition-colors ${
+                                isSelected
+                                  ? 'bg-primary border-primary'
+                                  : 'border-outline-variant bg-surface'
+                              }`}
+                            >
+                              {isSelected && <Check className="h-3 w-3 text-on-primary" />}
+                            </button>
                           )}
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-bold text-on-surface leading-tight truncate">
+                              {order.id}
+                            </span>
+                            <span className="text-[10px] text-on-surface-variant/70 mt-0.5">
+                              {formatDate(order.createdAt)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 shrink-0">
+                          <div className="flex flex-col text-right">
+                            <span className="text-sm font-bold text-on-surface leading-tight">
+                              ${order.total.toLocaleString('es-CL')}
+                            </span>
+                            <span className="text-[10px] text-on-surface-variant/70 mt-0.5">
+                              {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+
+                          <span
+                            className={`text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border ${
+                              order.status === 'pendiente'
+                                ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                : order.status === 'en_camino'
+                                  ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                                  : 'bg-green-500/10 text-green-500 border-green-500/20'
+                            }`}
+                          >
+                            {order.status === 'pendiente'
+                              ? 'Pendiente'
+                              : order.status === 'en_camino'
+                                ? 'En camino'
+                                : 'Entregado'}
+                          </span>
                         </div>
                       </div>
                     );
@@ -460,116 +399,137 @@ export function AccountScreen({
               )}
             </div>
           )}
-        </section>
 
-        {/* Theme Section */}
-        <section className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 mb-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {theme === 'dark' ? (
-                <Moon className="w-5 h-5 text-primary" />
-              ) : (
-                <Sun className="w-5 h-5 text-primary" />
-              )}
+          {/* 2. FIDELIDAD TAB */}
+          {activeMainTab === 'fidelidad' && (
+            <div className="flex flex-col gap-4 animate-screen-in">
+              <span className="text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-widest">
+                Puntos y Beneficios
+              </span>
+              <LoyaltyCard onRefresh={onRefresh} />
+            </div>
+          )}
+
+          {/* 3. SOPORTE TAB */}
+          {activeMainTab === 'soporte' && (
+            <div className="flex flex-col gap-5 animate-screen-in">
+              
+              {/* WhatsApp direct help */}
               <div>
-                <h3 className="text-sm font-semibold text-on-surface">Apariencia</h3>
-                <p className="text-xs text-on-surface-variant">
-                  {theme === 'dark' ? 'Modo oscuro activado' : 'Modo claro activado'}
-                </p>
-              </div>
-            </div>
-            <ThemeToggle theme={theme} onToggle={onToggleTheme} />
-          </div>
-        </section>
-
-        {/* Presentation Mode */}
-        <section className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 mb-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <QrCode className="w-5 h-5 text-primary" />
-              <div>
-                <h3 className="text-sm font-semibold text-on-surface">Modo Presentacion</h3>
-                <p className="text-xs text-on-surface-variant">QR para acceder desde el celular</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowQR(true)}
-              className="text-xs font-semibold text-primary bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary/20 active:scale-95 transition-all"
-            >
-              Mostrar QR
-            </button>
-          </div>
-        </section>
-
-        {/* Contact Info */}
-        <section className="mb-4">
-          <h3 className="font-serif text-lg text-on-surface font-bold mb-3">Contacto</h3>
-          <div className="flex flex-col gap-2">
-            <a
-              href="tel:+56912345678"
-              className="flex items-center gap-3 bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow active:scale-[0.99]"
-            >
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Phone className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-semibold text-on-surface">Telefono</h4>
-                <p className="text-xs text-on-surface-variant">+56 9 1234 5678</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-on-surface-variant shrink-0" />
-            </a>
-            <a
-              href="mailto:contacto@maulelena.cl"
-              className="flex items-center gap-3 bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow active:scale-[0.99]"
-            >
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Mail className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-semibold text-on-surface">Email</h4>
-                <p className="text-xs text-on-surface-variant">contacto@maulelena.cl</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-on-surface-variant shrink-0" />
-            </a>
-            <div className="flex items-center gap-3 bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <MapPin className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-semibold text-on-surface">Cobertura</h4>
-                <p className="text-xs text-on-surface-variant">16 comunas en la Region del Maule</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Links */}
-        <section className="mb-4">
-          <h3 className="font-serif text-lg text-on-surface font-bold mb-3">Informacion</h3>
-          <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl overflow-hidden shadow-sm divide-y divide-outline-variant/30">
-            {[
-              { label: 'Terminos y condiciones', icon: ExternalLink },
-              { label: 'Politica de privacidad', icon: ExternalLink },
-              { label: 'Preguntas frecuentes', icon: ExternalLink },
-            ].map((link) => {
-              const Icon = link.icon;
-              return (
-                <button
-                  key={link.label}
-                  className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-surface-variant/50 transition-colors active:bg-surface-variant"
+                <span className="text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-widest block mb-2.5">
+                  Contacto directo
+                </span>
+                <a
+                  href="https://wa.me/56912345678"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-3 bg-surface-container-low/30 hover:bg-surface-container-low/60 border border-outline-variant/10 rounded-2xl p-4 shadow-sm transition-all active:scale-[0.99] group cursor-pointer"
                 >
-                  <span className="text-sm text-on-surface">{link.label}</span>
-                  <Icon className="w-4 h-4 text-on-surface-variant" />
-                </button>
-              );
-            })}
-          </div>
-        </section>
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 text-primary">
+                    <Phone className="w-5 h-5 fill-current" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs font-bold text-on-surface">Asistencia WhatsApp</h4>
+                    <p className="text-[10px] text-on-surface-variant mt-0.5">Conversa con nuestro equipo para dudas o despachos</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-on-surface-variant group-hover:translate-x-0.5 transition-transform" />
+                </a>
+              </div>
+
+              {/* Coverage communes dropdown accordion */}
+              <div>
+                <span className="text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-widest block mb-2.5">
+                  Cobertura Regional
+                </span>
+                <div className="bg-surface-container-low/30 border border-outline-variant/10 rounded-2xl overflow-hidden shadow-sm">
+                  <button
+                    onClick={() => setShowCoverage(v => !v)}
+                    className="w-full flex items-center justify-between p-4 transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                        <MapPin className="w-5 h-5" />
+                      </div>
+                      <div className="text-left">
+                        <h4 className="text-xs font-bold text-on-surface">Comunas habilitadas</h4>
+                        <p className="text-[10px] text-on-surface-variant mt-0.5">Entregamos en 16 comunas de la Región del Maule</p>
+                      </div>
+                    </div>
+                    {showCoverage ? (
+                      <ChevronUp className="w-4 h-4 text-on-surface-variant/70" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-on-surface-variant/70" />
+                    )}
+                  </button>
+
+                  <div className={`overflow-hidden transition-all duration-300 ${showCoverage ? 'max-h-72 border-t border-outline-variant/10 overflow-y-auto' : 'max-h-0'}`}>
+                    <div className="p-4 grid grid-cols-2 gap-2 bg-surface/50">
+                      {comunas.map((c) => (
+                        <div key={c} className="flex items-center gap-1.5 text-xs text-on-surface-variant/80">
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                          <span>{c}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Share QR */}
+              <div>
+                <span className="text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-widest block mb-2.5">
+                  Compartir Aplicación
+                </span>
+                <div
+                  onClick={() => setShowQR(true)}
+                  className="flex items-center gap-3 bg-surface-container-low/30 hover:bg-surface-container-low/60 border border-outline-variant/10 rounded-2xl p-4 shadow-sm transition-all active:scale-[0.99] group cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 text-primary">
+                    <Share2 className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs font-bold text-on-surface">Código QR y Enlace</h4>
+                    <p className="text-[10px] text-on-surface-variant mt-0.5">Comparte Maule Leña con tus conocidos</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-on-surface-variant group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </div>
+
+              {/* Informative Links */}
+              <div>
+                <span className="text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-widest block mb-2.5">
+                  Información Legal
+                </span>
+                <div className="bg-surface-container-low/30 border border-outline-variant/10 rounded-2xl overflow-hidden shadow-sm divide-y divide-outline-variant/10">
+                  {[
+                    { label: 'Términos y condiciones', icon: ExternalLink },
+                    { label: 'Política de privacidad', icon: ExternalLink },
+                    { label: 'Preguntas frecuentes', icon: ExternalLink },
+                  ].map((link) => {
+                    const Icon = link.icon;
+                    return (
+                      <button
+                        key={link.label}
+                        className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-surface-container/60 transition-colors active:bg-surface-container text-left"
+                      >
+                        <span className="text-xs font-medium text-on-surface">{link.label}</span>
+                        <Icon className="w-3.5 h-3.5 text-on-surface-variant/60" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+        </div>
 
         {/* Footer */}
-        <footer className="text-center py-6">
-          <p className="text-[10px] text-on-surface-variant/60 mt-1">Maule Leña © 2025</p>
+        <footer className="text-center py-6 mt-4">
+          <p className="text-[9px] text-on-surface-variant/40 tracking-wider font-semibold uppercase">Maule Leña © 2026</p>
         </footer>
+
       </main>
 
       {/* Order Detail Modal */}
@@ -643,9 +603,9 @@ export function AccountScreen({
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-600 mb-4">
               <Trash2 className="h-6 w-6" />
             </div>
-            <h2 className="font-serif text-2xl font-bold text-on-surface">Eliminar pedido{selectedIds.size !== 1 ? 's' : ''}</h2>
+            <h2 className="font-serif text-2xl font-bold text-on-surface">Eliminar pedido{selectedOrderIds.size !== 1 ? 's' : ''}</h2>
             <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
-              ¿Eliminar {selectedIds.size} pedido{selectedIds.size !== 1 ? 's' : ''} del historial? Esta accion no se puede deshacer.
+              ¿Eliminar {selectedOrderIds.size} pedido{selectedOrderIds.size !== 1 ? 's' : ''} del historial? Esta accion no se puede deshacer.
             </p>
             <div className="mt-5 flex gap-3">
               <button
@@ -655,7 +615,7 @@ export function AccountScreen({
                 Cancelar
               </button>
               <button
-                onClick={handleDelete}
+                onClick={handleDeleteOrders}
                 className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition-all hover:bg-red-700 active:scale-[0.98]"
               >
                 Eliminar
@@ -666,11 +626,11 @@ export function AccountScreen({
       )}
 
       {/* Floating delete action bar */}
-      {isEditing && selectedIds.size > 0 && (
+      {isEditingOrders && selectedOrderIds.size > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-[180] bg-surface border-t border-outline-variant/30 px-6 py-4 shadow-lg">
           <div className="max-w-md mx-auto flex items-center justify-between gap-3">
             <button
-              onClick={cancelEditing}
+              onClick={cancelEditingOrders}
               className="flex-1 rounded-xl border border-outline-variant/50 px-4 py-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-high"
             >
               Cancelar
@@ -680,7 +640,7 @@ export function AccountScreen({
               className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition-all hover:bg-red-700 active:scale-[0.98]"
             >
               <Trash2 className="h-4 w-4" />
-              Eliminar ({selectedIds.size})
+              Eliminar ({selectedOrderIds.size})
             </button>
           </div>
         </div>

@@ -1,18 +1,28 @@
 import { useState } from 'react';
 import { Product } from '../types';
-import { Star, ShoppingCart, Check, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+import { Star, ShoppingCart, Check, ChevronLeft, ChevronRight, MapPin, Heart } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
   onAdd: () => void;
   cartQuantity: number;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
 }
 
-export function ProductCard({ product, onAdd, cartQuantity }: ProductCardProps) {
+export function ProductCard({ product, onAdd, cartQuantity, isFavorite = false, onToggleFavorite }: ProductCardProps) {
   const [justAdded, setJustAdded] = useState(false);
+  const [heartBounce, setHeartBounce] = useState(false);
   const images = product.images && product.images.length > 0 ? product.images : [product.imageUrl];
   const [currentImage, setCurrentImage] = useState(0);
   const hasMultipleImages = images.length > 1;
+
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setHeartBounce(true);
+    setTimeout(() => setHeartBounce(false), 300);
+    onToggleFavorite?.();
+  };
 
   const handleAdd = () => {
     onAdd();
@@ -31,7 +41,7 @@ export function ProductCard({ product, onAdd, cartQuantity }: ProductCardProps) 
   };
 
   return (
-    <div className="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/30 flex flex-col transition-transform hover:-translate-y-1 hover:shadow-md">
+    <div className="h-full bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/30 flex flex-col transition-transform hover:-translate-y-1 hover:shadow-md">
       <div className="relative h-48 w-full p-2">
         <img
           alt={product.name}
@@ -44,10 +54,14 @@ export function ProductCard({ product, onAdd, cartQuantity }: ProductCardProps) 
             {product.badge}
           </div>
         )}
-        {cartQuantity > 0 && (
-          <div className="absolute top-4 right-4 bg-primary text-on-primary text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
-            {cartQuantity} en carrito
-          </div>
+        {onToggleFavorite && (
+          <button
+            onClick={handleToggleFavorite}
+            className={`absolute top-4 right-4 w-9 h-9 bg-white/70 dark:bg-white/50 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm transition-transform duration-300 ${heartBounce ? 'scale-125' : 'scale-100'}`}
+            aria-label={isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+          >
+            <Heart className={`w-5 h-5 transition-colors ${isFavorite ? 'fill-red-500 text-red-500' : 'fill-transparent text-on-surface-variant'}`} />
+          </button>
         )}
         {hasMultipleImages && (
           <>
@@ -123,7 +137,12 @@ export function ProductCard({ product, onAdd, cartQuantity }: ProductCardProps) 
             ) : (
               <>
                 <ShoppingCart className="w-5 h-5" />
-                Añadir al Carrito
+                <span>Añadir al Carrito</span>
+                {cartQuantity > 0 && (
+                  <span className="ml-auto bg-white/25 text-white text-[11px] font-bold w-5.5 h-5.5 rounded-full flex items-center justify-center shrink-0">
+                    {cartQuantity}
+                  </span>
+                )}
               </>
             )}
           </button>

@@ -27,15 +27,16 @@ export function RollingText({ interval = 3000 }: RollingTextProps) {
   }, [interval]);
 
   return (
-    <p
-      className="text-white font-medium text-sm leading-relaxed mb-5 max-w-[260px] transition-all duration-350"
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(6px)',
-        transition: 'opacity 350ms ease, transform 350ms ease',
-      }}
-    >
-      {phrases[index]}
-    </p>
+    <div className="mb-5 min-h-[48px] flex items-center">
+      <p
+        className="text-white font-medium text-sm leading-relaxed max-w-[260px]"
+        style={{
+          opacity: visible ? 1 : 0,
+          transition: 'opacity 350ms ease',
+        }}
+      >
+        {phrases[index]}
+      </p>
+    </div>
   );
 }

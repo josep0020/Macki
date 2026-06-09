@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Home, Flame, ShoppingCart, User } from 'lucide-react';
 import { Screen } from '../types';
 
@@ -20,9 +21,60 @@ const tabs: NavTab[] = [
   { key: 'account', label: 'Cuenta', icon: User },
 ];
 
+const SCROLL_THRESHOLD = 50;
+
 export function BottomNavBar({ activeTab, onNavigate, cartItemCount }: BottomNavBarProps) {
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const accumulatedDelta = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      const delta = currentY - lastScrollY.current;
+
+      // At the very top, always show
+      if (currentY <= 10) {
+        setIsVisible(true);
+        accumulatedDelta.current = 0;
+        lastScrollY.current = currentY;
+        return;
+      }
+
+      // Accumulate scroll distance in the current direction
+      if (delta > 0) {
+        // Scrolling down
+        accumulatedDelta.current = Math.max(0, accumulatedDelta.current + delta);
+        if (accumulatedDelta.current > SCROLL_THRESHOLD) {
+          setIsVisible(false);
+        }
+      } else if (delta < 0) {
+        // Scrolling up — show immediately on any upward scroll
+        accumulatedDelta.current = 0;
+        setIsVisible(true);
+      }
+
+      lastScrollY.current = currentY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Show navbar automatically when an item is added to the cart
+  const prevCartCount = useRef(cartItemCount);
+  useEffect(() => {
+    if (cartItemCount > prevCartCount.current) {
+      setIsVisible(true);
+    }
+    prevCartCount.current = cartItemCount;
+  }, [cartItemCount]);
+
   return (
-    <nav className="bottom-nav" aria-label="Navegación principal">
+    <nav
+      className={`bottom-nav ${isVisible ? '' : 'bottom-nav-hidden'}`}
+      aria-label="Navegación principal"
+    >
       <div className="bottom-nav-inner">
         {tabs.map(tab => {
           const Icon = tab.icon;

@@ -1,8 +1,10 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { BottomNavBar } from './components/BottomNavBar';
-import { CartItem, Product, Screen, OrderData, ThemeMode, TrackedOrder, OrderStatus } from './types';
+import { CartItem, Product, Screen, OrderData, ThemeMode, TrackedOrder, OrderStatus, LoyaltyCoupon } from './types';
 import { DEFAULT_COMUNA, getShippingCost, products } from './data';
 import { saveOrder, getOrders, simulateOrderProgress } from './utils/orders';
+import { getFavorites, toggleFavorite } from './utils/favorites';
+import { addPointsForOrder, getActiveCoupons, redeemCoupon, applyCouponDiscount } from './utils/loyalty';
 
 const HomeScreen             = lazy(() => import('./screens/HomeScreen').then(m => ({ default: m.HomeScreen })));
 const CatalogScreen          = lazy(() => import('./screens/CatalogScreen').then(m => ({ default: m.CatalogScreen })));
@@ -32,6 +34,13 @@ export default function App() {
   const [orders, setOrders] = useState<TrackedOrder[]>(() => getOrders());
   const [theme, setTheme] = useState<ThemeMode>('light');
   const [showCalculator, setShowCalculator] = useState(false);
+  const [favorites, setFavorites] = useState<string[]>(() => getFavorites());
+  const [activeCoupon, setActiveCoupon] = useState<LoyaltyCoupon | null>(null);
+  const [lastOrderPoints, setLastOrderPoints] = useState<{
+    pointsEarned: number;
+    leveledUp: boolean;
+    newLevel?: string;
+  } | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -69,6 +78,22 @@ export default function App() {
     setCart(prev => prev.filter(item => item.product.id !== productId));
   };
 
+  const handleToggleFavorite = (productId: string) => {
+    toggleFavorite(productId);
+    setFavorites(getFavorites());
+  };
+
+  const handleApplyCoupon = () => {
+    const available = getActiveCoupons();
+    if (available.length > 0) {
+      setActiveCoupon(available[0]);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setActiveCoupon(null);
+  };
+
   const handleConfirmOrder = (data: OrderData) => {
     setOrderData(data);
     const id = 'ML-' + Date.now().toString(36).toUpperCase();
@@ -76,6 +101,21 @@ export default function App() {
 
     const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
     const { cost: shippingCost } = getShippingCost(comuna, subtotal);
+
+    let couponDiscount = 0;
+    if (activeCoupon) {
+      const { totalDiscount } = applyCouponDiscount(activeCoupon, subtotal, shippingCost);
+      couponDiscount = totalDiscount;
+      redeemCoupon(activeCoupon.id);
+    }
+
+    const finalTotal = subtotal + shippingCost - couponDiscount;
+    const pointsResult = addPointsForOrder(id, finalTotal);
+    setLastOrderPoints({
+      pointsEarned: pointsResult.pointsEarned,
+      leveledUp: pointsResult.leveledUp,
+      newLevel: pointsResult.newLevel,
+    });
 
     const trackedOrder: TrackedOrder = {
       id,
@@ -88,13 +128,16 @@ export default function App() {
         price: item.product.price,
         unit: item.product.unit,
       })),
-      total: subtotal + shippingCost,
-      shippingCost,
+      total: finalTotal,
+      shippingCost: Math.max(0, shippingCost - couponDiscount),
       customerName: data.name,
       customerPhone: data.phone,
       customerAddress: data.address,
       notes: data.notes,
+      deliveryDate: data.deliveryDate,
+      deliveryTimeSlot: data.deliveryTimeSlot,
       statusHistory: [{ status: 'pendiente', date: new Date().toISOString() }],
+      pointsEarned: pointsResult.pointsEarned,
     };
 
     saveOrder(trackedOrder);
@@ -106,6 +149,8 @@ export default function App() {
     setCart([]);
     setOrderData(null);
     setOrderId('');
+    setActiveCoupon(null);
+    setLastOrderPoints(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setCurrentScreen('home');
   };
@@ -145,6 +190,14 @@ export default function App() {
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const showNav = NAV_SCREENS.includes(currentScreen);
 
+  const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const { cost: shippingCost } = getShippingCost(comuna, subtotal);
+  let couponDiscount = 0;
+  if (activeCoupon) {
+    const { totalDiscount } = applyCouponDiscount(activeCoupon, subtotal, shippingCost);
+    couponDiscount = totalDiscount;
+  }
+
   return (
     <div className="bg-surface min-h-screen text-on-surface selection:bg-primary/20">
       <Suspense fallback={<ScreenFallback />}>
@@ -170,6 +223,8 @@ export default function App() {
           onGoToCheckout={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setCurrentScreen('checkout'); }}
           theme={theme}
           onToggleTheme={toggleTheme}
+          favorites={favorites}
+          onToggleFavorite={handleToggleFavorite}
         />
         </div>
       )}
@@ -184,6 +239,10 @@ export default function App() {
           onGoToConfirmation={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setCurrentScreen('orderConfirmation'); }}
           theme={theme}
           onToggleTheme={toggleTheme}
+          activeCoupon={activeCoupon}
+          onApplyCoupon={handleApplyCoupon}
+          onRemoveCoupon={handleRemoveCoupon}
+          couponDiscount={couponDiscount}
         />
         </div>
       )}
@@ -209,6 +268,9 @@ export default function App() {
           onGoHome={handleResetOrder}
           theme={theme}
           onToggleTheme={toggleTheme}
+          pointsEarned={lastOrderPoints?.pointsEarned}
+          leveledUp={lastOrderPoints?.leveledUp}
+          newLevel={lastOrderPoints?.newLevel}
         />
         </div>
       )}

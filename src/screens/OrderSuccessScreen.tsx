@@ -1,9 +1,12 @@
-import { CheckCircle, Home, MapPin, Phone, Copy } from 'lucide-react';
+import { CheckCircle, Home, MapPin, Phone, Copy, MessageCircle, CalendarDays, Sparkles } from 'lucide-react';
 import { CartItem, OrderData, ThemeMode } from '../types';
 import { getShippingCost } from '../data';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { OrderTracker } from '../components/OrderTracker';
 import { useState } from 'react';
+import { buildWhatsAppMessage, openWhatsApp } from '../utils/whatsapp';
+import { getLevelConfig } from '../utils/loyalty';
+import { getLevelIcon } from '../components/LoyaltyBadge';
 
 interface OrderSuccessScreenProps {
   orderId: string;
@@ -13,9 +16,12 @@ interface OrderSuccessScreenProps {
   onGoHome: () => void;
   theme: ThemeMode;
   onToggleTheme: () => void;
+  pointsEarned?: number;
+  leveledUp?: boolean;
+  newLevel?: string;
 }
 
-export function OrderSuccessScreen({ orderId, orderData, cart, comuna, onGoHome, theme, onToggleTheme }: OrderSuccessScreenProps) {
+export function OrderSuccessScreen({ orderId, orderData, cart, comuna, onGoHome, theme, onToggleTheme, pointsEarned, leveledUp, newLevel }: OrderSuccessScreenProps) {
   const [copied, setCopied] = useState(false);
   const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   const { cost: shippingCost } = getShippingCost(comuna, subtotal);
@@ -37,6 +43,23 @@ export function OrderSuccessScreen({ orderId, orderData, cart, comuna, onGoHome,
       setTimeout(() => setCopied(false), 2000);
     });
   };
+
+  const handleWhatsApp = () => {
+    const message = buildWhatsAppMessage(orderId, orderData, cart, comuna);
+    openWhatsApp(message);
+  };
+
+  const formatDeliveryDate = (dateStr: string): string => {
+    const date = new Date(dateStr + 'T12:00:00');
+    return date.toLocaleDateString('es-CL', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+  };
+
+  // Resolve level config for display
+  const levelConfig = newLevel ? getLevelConfig(newLevel as any) : null;
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
@@ -83,6 +106,17 @@ export function OrderSuccessScreen({ orderId, orderData, cart, comuna, onGoHome,
             <Phone className="w-4 h-4 text-on-surface-variant shrink-0" />
             <p className="text-sm text-on-surface-variant">{orderData.phone}</p>
           </div>
+          {orderData.deliveryDate && (
+            <div className="flex items-center gap-3 mb-4">
+              <CalendarDays className="w-4 h-4 text-on-surface-variant shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-on-surface capitalize">{formatDeliveryDate(orderData.deliveryDate)}</p>
+                {orderData.deliveryTimeSlot && (
+                  <p className="text-xs text-on-surface-variant mt-0.5">{orderData.deliveryTimeSlot}</p>
+                )}
+              </div>
+            </div>
+          )}
           {orderData.notes && (
             <p className="text-sm text-on-surface-variant italic bg-surface-container px-3 py-2 rounded-lg">Nota: {orderData.notes}</p>
           )}
@@ -117,9 +151,73 @@ export function OrderSuccessScreen({ orderId, orderData, cart, comuna, onGoHome,
           </div>
         </div>
 
-        <div className="w-full bg-primary/5 rounded-2xl p-4 border border-primary/20 mb-8">
-          <p className="text-sm text-on-surface text-center">Recibirás la confirmación y seguimiento de tu pedido por WhatsApp o correo electrónico.</p>
+        {/* WhatsApp Button */}
+        <div className="w-full mb-6">
+          <button
+            onClick={handleWhatsApp}
+            className="w-full relative overflow-hidden font-semibold text-base py-4 rounded-2xl shadow-[0_8px_30px_rgba(37,211,102,0.15)] hover:shadow-[0_8px_30px_rgba(37,211,102,0.3)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-3 text-white cursor-pointer"
+            style={{
+              background: 'linear-gradient(135deg, #128C7E 0%, #25D366 100%)',
+            }}
+          >
+            {/* Ambient Shimmer Light Effect */}
+            <div className="absolute inset-0 animate-shimmer pointer-events-none opacity-25" />
+            <MessageCircle className="w-5 h-5 fill-current relative z-10" />
+            <span className="relative z-10">Enviar Pedido por WhatsApp</span>
+          </button>
+          <p className="text-xs text-on-surface-variant text-center mt-2.5">
+            Tu pedido será confirmado y agendado por WhatsApp
+          </p>
         </div>
+
+        {/* Points Earned Section (Glassmorphism & Glow) */}
+        {pointsEarned != null && pointsEarned > 0 && (
+          <div className="w-full relative overflow-hidden rounded-3xl border border-white/10 dark:border-white/5 bg-white/[0.04] dark:bg-white/[0.02] backdrop-blur-xl p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] mb-6 flex flex-col gap-4">
+            {/* Subtle premium gradient lights inside */}
+            <div className="absolute -right-8 -top-8 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -left-8 -bottom-8 w-24 h-24 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
+
+            <div className="relative z-10 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-amber-500 dark:text-amber-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                  Club de Fidelidad
+                </span>
+                <h3 className="font-serif text-2xl font-extrabold text-on-surface flex items-baseline gap-1.5">
+                  +{pointsEarned}
+                  <span className="text-xs font-normal text-on-surface-variant font-sans">puntos acumulados</span>
+                </h3>
+              </div>
+
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg border"
+                style={{
+                  backgroundColor: `${levelConfig?.color ?? '#D97706'}15`,
+                  borderColor: `${levelConfig?.color ?? '#D97706'}30`,
+                  color: levelConfig?.color ?? '#D97706',
+                }}
+              >
+                {getLevelIcon(newLevel as any, 'w-6 h-6 fill-current')}
+              </div>
+            </div>
+
+            {leveledUp && newLevel && levelConfig && (
+              <div className="relative z-10 mt-2 pt-4 border-t border-outline-variant/10 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4.5 h-4.5 text-amber-500 animate-spin" style={{ animationDuration: '8s' }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] font-bold text-amber-500 dark:text-amber-400 uppercase tracking-widest">
+                    ¡Subiste de Nivel!
+                  </p>
+                  <p className="text-sm font-bold text-on-surface truncate">
+                    Nivel {levelConfig.name}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <button onClick={onGoHome} className="w-full bg-primary text-on-primary font-semibold text-lg py-4 rounded-xl shadow-lg hover:bg-primary-container active:scale-[0.98] transition-all flex items-center justify-center gap-2">
           <Home className="w-5 h-5" />

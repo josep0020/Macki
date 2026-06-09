@@ -1,9 +1,10 @@
-import { ArrowLeft, MoreVertical, MapPin, CreditCard, Lock, Trash2, Truck, ChevronRight, Info } from 'lucide-react';
-import { CartItem, ThemeMode } from '../types';
+import { ArrowLeft, MoreVertical, MapPin, CreditCard, Lock, Trash2, Truck, ChevronRight, Info, Ticket, X } from 'lucide-react';
+import { CartItem, ThemeMode, LoyaltyCoupon } from '../types';
 import { CartItemView } from '../components/CartItem';
 import { TrustIndicators } from '../components/TrustIndicators';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { getShippingCost, FREE_SHIPPING_THRESHOLD } from '../data';
+import { getActiveCoupons } from '../utils/loyalty';
 
 interface CheckoutScreenProps {
   cart: CartItem[];
@@ -14,16 +15,25 @@ interface CheckoutScreenProps {
   onGoToConfirmation: () => void;
   theme: ThemeMode;
   onToggleTheme: () => void;
+  activeCoupon?: LoyaltyCoupon | null;
+  onApplyCoupon?: () => void;
+  onRemoveCoupon?: () => void;
+  couponDiscount?: number;
 }
 
-export function CheckoutScreen({ cart, comuna, onUpdateQuantity, onRemoveItem, onGoBack, onGoToConfirmation, theme, onToggleTheme }: CheckoutScreenProps) {
+export function CheckoutScreen({ cart, comuna, onUpdateQuantity, onRemoveItem, onGoBack, onGoToConfirmation, theme, onToggleTheme, activeCoupon, onApplyCoupon, onRemoveCoupon, couponDiscount }: CheckoutScreenProps) {
   const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   const { cost: shippingCost, label: shippingLabel, savings } = getShippingCost(comuna, subtotal);
-  const total = subtotal + shippingCost;
+  const effectiveDiscount = couponDiscount && couponDiscount > 0 ? couponDiscount : 0;
+  const total = subtotal + shippingCost - effectiveDiscount;
   const isCartEmpty = cart.length === 0;
   const remainingForFree = FREE_SHIPPING_THRESHOLD - subtotal;
   const showFreeShippingHint = remainingForFree > 0 && subtotal < FREE_SHIPPING_THRESHOLD && !isCartEmpty;
   const freeShippingPct = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
+
+  // Check if there are available coupons when none is applied
+  const availableCoupons = !activeCoupon ? getActiveCoupons() : [];
+  const hasAvailableCoupon = availableCoupons.length > 0;
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
@@ -56,6 +66,43 @@ export function CheckoutScreen({ cart, comuna, onUpdateQuantity, onRemoveItem, o
             <div className="w-full bg-outline-variant/30 h-2 rounded-full overflow-hidden">
               <div className="bg-[#334529] h-full rounded-full transition-all duration-500" style={{ width: `${freeShippingPct}%` }} />
             </div>
+          </div>
+        )}
+
+        {/* Coupon Banner */}
+        {!isCartEmpty && activeCoupon && (
+          <div className="bg-primary/10 border border-primary/30 rounded-3xl px-5 py-4 flex items-center gap-3 shadow-sm">
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary shrink-0">
+              <Ticket className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-on-surface truncate">{activeCoupon.description}</p>
+              <p className="text-xs text-primary font-medium mt-0.5">Cupón aplicado</p>
+            </div>
+            {onRemoveCoupon && (
+              <button
+                onClick={onRemoveCoupon}
+                className="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant flex items-center justify-center transition-colors shrink-0"
+                aria-label="Quitar cupón"
+              >
+                <X className="w-4 h-4 text-on-surface-variant" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {!isCartEmpty && !activeCoupon && hasAvailableCoupon && onApplyCoupon && (
+          <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl px-5 py-4 flex items-center gap-3 shadow-sm">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <Ticket className="w-5 h-5" />
+            </div>
+            <p className="text-sm text-on-surface flex-1">Tienes un cupón disponible</p>
+            <button
+              onClick={onApplyCoupon}
+              className="text-sm font-bold text-primary hover:text-primary-container transition-colors px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20"
+            >
+              Aplicar
+            </button>
           </div>
         )}
 
@@ -120,6 +167,15 @@ export function CheckoutScreen({ cart, comuna, onUpdateQuantity, onRemoveItem, o
               {savings > 0 && (
                 <div className="bg-[#334529]/10 rounded-full px-4 py-1.5 flex items-center gap-2 self-start">
                   <span className="text-xs font-semibold text-[#334529]">Ahorras ${savings.toLocaleString('es-CL')} en despacho</span>
+                </div>
+              )}
+              {effectiveDiscount > 0 && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-on-surface-variant flex items-center gap-1.5">
+                    <Ticket className="w-3.5 h-3.5 text-primary" />
+                    Cupón de descuento
+                  </span>
+                  <span className="font-bold text-primary">-${effectiveDiscount.toLocaleString('es-CL')}</span>
                 </div>
               )}
               <hr className="border-outline-variant/30 my-1" />

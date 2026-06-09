@@ -16,7 +16,7 @@ export interface CartItem {
   quantity: number;
 }
 
-export type CategoryFilter = 'todos' | 'leña' | 'pellet' | 'parafina';
+export type CategoryFilter = 'todos' | 'leña' | 'pellet' | 'parafina' | 'favoritos';
 
 export type Screen = 'home' | 'catalog' | 'checkout' | 'orderConfirmation' | 'orderSuccess' | 'account';
 
@@ -25,6 +25,8 @@ export interface OrderData {
   phone: string;
   address: string;
   notes: string;
+  deliveryDate?: string;
+  deliveryTimeSlot?: string;
 }
 
 export type ThemeMode = 'light' | 'dark';
@@ -42,5 +44,36 @@ export interface TrackedOrder {
   customerPhone: string;
   customerAddress: string;
   notes?: string;
+  deliveryDate?: string;
+  deliveryTimeSlot?: string;
   statusHistory: { status: OrderStatus; date: string }[];
+  pointsEarned?: number;
+}
+
+// ── Loyalty System Types ──
+
+export type LoyaltyLevel = 'semilla' | 'brote' | 'roble' | 'fuego';
+
+export interface LoyaltyCoupon {
+  id: string;
+  level: LoyaltyLevel;
+  description: string;
+  discount: { type: 'fixed' | 'percentage' | 'free_shipping'; value: number };
+  redeemed: boolean;
+  earnedAt: string;
+}
+
+export interface LoyaltyPointEntry {
+  orderId: string;
+  points: number;
+  date: string;
+  total: number;
+}
+
+export interface LoyaltyState {
+  totalPoints: number;
+  currentLevel: LoyaltyLevel;
+  pointsHistory: LoyaltyPointEntry[];
+  coupons: LoyaltyCoupon[];
+  redeemedCoupons: string[];
 }

@@ -158,7 +158,7 @@ function Typewriter({ text, speed = 80, delay = 0 }: { text: string; speed?: num
   }, [text, speed, delay]);
 
   return (
-    <span className="relative inline-block">
+    <span className="relative inline">
       {displayedText}
       {!isDone && (
         <span className="inline-block w-[2px] h-[1em] bg-primary dark:bg-primary-container ml-0.5 align-middle animate-pulse" />
@@ -289,7 +289,7 @@ export function HomeScreen({
                   <TreePine className="w-3.5 h-3.5" />
                   Anticipa el Frío
                 </span>
-                <h4 className="font-serif text-3xl font-black text-on-surface leading-tight min-h-[72px]">
+                <h4 className="font-serif text-[25px] min-[375px]:text-[28px] min-[410px]:text-3xl font-black text-on-surface leading-tight min-h-[72px] pl-1.5 pr-1">
                   <Typewriter text="¡No te quedes sin leña!" speed={90} delay={400} />
                 </h4>
                 <p className="text-sm font-semibold text-on-surface mt-1.5 leading-snug max-w-[200px] animate-fade-in-up opacity-0" style={{ animationDelay: '2800ms', animationFillMode: 'both' }}>

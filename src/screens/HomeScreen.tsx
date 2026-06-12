@@ -139,21 +139,30 @@ function Typewriter({ text, speed = 80, delay = 0 }: { text: string; speed?: num
     setDisplayedText('');
     setIsDone(false);
     
-    const startTimeout = setTimeout(() => {
-      const timer = setInterval(() => {
-        if (i < text.length) {
-          setDisplayedText((prev) => prev + text.charAt(i));
-          i++;
-        } else {
-          setIsDone(true);
-          clearInterval(timer);
-        }
+    let intervalId: number | undefined;
+    
+    const timeoutId = window.setTimeout(() => {
+      intervalId = window.setInterval(() => {
+        setDisplayedText((prev) => {
+          if (i < text.length) {
+            const next = prev + text.charAt(i);
+            i++;
+            if (i === text.length) {
+              setIsDone(true);
+              window.clearInterval(intervalId);
+            }
+            return next;
+          }
+          return prev;
+        });
       }, speed);
-      return () => clearInterval(timer);
     }, delay);
 
     return () => {
-      clearTimeout(startTimeout);
+      window.clearTimeout(timeoutId);
+      if (intervalId !== undefined) {
+        window.clearInterval(intervalId);
+      }
     };
   }, [text, speed, delay]);
 

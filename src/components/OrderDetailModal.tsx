@@ -56,13 +56,13 @@ export function OrderDetailModal({ order, onClose, onRepeatOrder }: OrderDetailM
   <title>Comprobante ${order.id}</title>
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 24px; color: #1a1a1a; }
-    .header { text-align: center; border-bottom: 2px solid #334529; padding-bottom: 16px; margin-bottom: 24px; }
-    .header h1 { margin: 0; font-size: 22px; color: #334529; }
+    .header { text-align: center; border-bottom: 2px solid #1E5631; padding-bottom: 16px; margin-bottom: 24px; }
+    .header h1 { margin: 0; font-size: 22px; color: #1E5631; }
     .header p { margin: 4px 0 0; color: #666; font-size: 13px; }
     .section { margin-bottom: 20px; }
-    .section h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #334529; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+    .section h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #1E5631; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
     .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
-    .row.total { font-weight: bold; font-size: 16px; border-top: 2px solid #334529; padding-top: 10px; margin-top: 8px; }
+    .row.total { font-weight: bold; font-size: 16px; border-top: 2px solid #1E5631; padding-top: 10px; margin-top: 8px; }
     .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
     .notice { background: #fff8e1; border-left: 4px solid #ffc107; padding: 12px; margin: 16px 0; font-size: 13px; }
     .footer { text-align: center; margin-top: 32px; font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 16px; }
@@ -266,7 +266,7 @@ export function OrderDetailModal({ order, onClose, onRepeatOrder }: OrderDetailM
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={handlePrintVoucher}
-              className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-on-primary shadow-md transition-all hover:bg-primary-container active:scale-[0.98]"
+              className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-on-primary shadow-md transition-all hover:bg-primary/90 active:scale-[0.98]"
             >
               <Printer className="h-4 w-4" />
               Comprobante

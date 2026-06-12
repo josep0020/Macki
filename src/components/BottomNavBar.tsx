@@ -6,6 +6,7 @@ interface BottomNavBarProps {
   activeTab: Screen;
   onNavigate: (screen: Screen) => void;
   cartItemCount: number;
+  forceHidden?: boolean;
 }
 
 type NavTab = {
@@ -23,7 +24,7 @@ const tabs: NavTab[] = [
 
 const SCROLL_THRESHOLD = 50;
 
-export function BottomNavBar({ activeTab, onNavigate, cartItemCount }: BottomNavBarProps) {
+export function BottomNavBar({ activeTab, onNavigate, cartItemCount, forceHidden = false }: BottomNavBarProps) {
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
   const accumulatedDelta = useRef(0);
@@ -72,7 +73,7 @@ export function BottomNavBar({ activeTab, onNavigate, cartItemCount }: BottomNav
 
   return (
     <nav
-      className={`bottom-nav ${isVisible ? '' : 'bottom-nav-hidden'}`}
+      className={`bottom-nav ${isVisible && !forceHidden ? '' : 'bottom-nav-hidden'}`}
       aria-label="Navegación principal"
     >
       <div className="bottom-nav-inner">

@@ -1,10 +1,11 @@
-import { ArrowLeft, MoreVertical, MapPin, CreditCard, Lock, Trash2, Truck, ChevronRight, Info, Ticket, X } from 'lucide-react';
+import { ArrowLeft, MoreVertical, MapPin, CreditCard, Lock, Trash2, Truck, ChevronRight, Info, Ticket, X, ShieldAlert } from 'lucide-react';
 import { CartItem, ThemeMode, LoyaltyCoupon } from '../types';
 import { CartItemView } from '../components/CartItem';
 import { TrustIndicators } from '../components/TrustIndicators';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { getShippingCost, FREE_SHIPPING_THRESHOLD } from '../data';
 import { getActiveCoupons } from '../utils/loyalty';
+import { AirQualityData } from '../utils/airQuality';
 
 interface CheckoutScreenProps {
   cart: CartItem[];
@@ -19,9 +20,10 @@ interface CheckoutScreenProps {
   onApplyCoupon?: () => void;
   onRemoveCoupon?: () => void;
   couponDiscount?: number;
+  airQuality: AirQualityData;
 }
 
-export function CheckoutScreen({ cart, comuna, onUpdateQuantity, onRemoveItem, onGoBack, onGoToConfirmation, theme, onToggleTheme, activeCoupon, onApplyCoupon, onRemoveCoupon, couponDiscount }: CheckoutScreenProps) {
+export function CheckoutScreen({ cart, comuna, onUpdateQuantity, onRemoveItem, onGoBack, onGoToConfirmation, theme, onToggleTheme, activeCoupon, onApplyCoupon, onRemoveCoupon, couponDiscount, airQuality }: CheckoutScreenProps) {
   const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   const { cost: shippingCost, label: shippingLabel, savings } = getShippingCost(comuna, subtotal);
   const effectiveDiscount = couponDiscount && couponDiscount > 0 ? couponDiscount : 0;
@@ -35,18 +37,23 @@ export function CheckoutScreen({ cart, comuna, onUpdateQuantity, onRemoveItem, o
   const availableCoupons = !activeCoupon ? getActiveCoupons() : [];
   const hasAvailableCoupon = availableCoupons.length > 0;
 
+  const hasRestrictedFirewoodInCart = cart.some(item => item.product.category === 'leña');
+
   return (
     <div className="min-h-screen bg-surface flex flex-col">
-      <header className="bg-surface sticky top-0 z-50 flex justify-between items-center w-full px-4 py-3 shadow-sm">
-        <button onClick={onGoBack} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors active:scale-95 text-on-surface">
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <h1 className="font-serif text-xl md:text-2xl text-on-surface font-bold">Resumen de Compra</h1>
-        <div className="flex items-center gap-2">
-          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
-          <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors active:scale-95 text-on-surface">
-            <MoreVertical className="w-6 h-6" />
+      {/* Liquid Glass Header */}
+      <header className="sticky top-0 z-50 w-full bg-surface-container-lowest/80 dark:bg-surface-container-low/75 backdrop-blur-md border-b border-outline-variant/15 rounded-b-2xl shadow-sm transition-all">
+        <div className="max-w-md mx-auto flex justify-between items-center px-4 py-3">
+          <button onClick={onGoBack} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors active:scale-95 text-primary cursor-pointer" aria-label="Volver">
+            <ArrowLeft className="w-6 h-6" />
           </button>
+          <h1 className="font-serif text-lg md:text-xl text-primary font-bold">Resumen de Compra</h1>
+          <div className="flex items-center gap-1">
+            <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+            <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors active:scale-95 text-primary cursor-pointer" aria-label="Más opciones">
+              <MoreVertical className="w-6 h-6" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -113,6 +120,22 @@ export function CheckoutScreen({ cart, comuna, onUpdateQuantity, onRemoveItem, o
               <span className="text-sm text-on-surface-variant">{cart.reduce((s, i) => s + i.quantity, 0)} items</span>
             )}
           </div>
+
+          {hasRestrictedFirewoodInCart && airQuality.isRestricted && (
+            <div className="bg-red-500/5 border border-red-500/25 rounded-2xl p-4 shadow-sm animate-pulse-slow">
+              <div className="flex items-start gap-3">
+                <ShieldAlert className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-xs font-black text-red-800 dark:text-red-200 uppercase tracking-wide">
+                    LEÑA RESTRINGIDA HOY
+                  </p>
+                  <p className="text-xs text-red-700 dark:text-red-300 mt-0.5 leading-relaxed">
+                    Su comuna está bajo restricción. Prohibido encender leña hoy (multas de hasta $325.000). El despacho se entregará seco para almacenamiento y uso posterior.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           {isCartEmpty ? (
             <div className="text-center py-12">
               <img src="/images/carro-de-la-compra.png" alt="Carrito vacío" className="w-44 h-44 mx-auto mb-2" />
@@ -216,9 +239,9 @@ export function CheckoutScreen({ cart, comuna, onUpdateQuantity, onRemoveItem, o
       {!isCartEmpty && (
         <div className="fixed bottom-[88px] left-0 w-full p-4 z-[90]">
           <div className="max-w-md mx-auto">
-            <button onClick={onGoToConfirmation} className="w-full bg-[#334529] hover:bg-[#283720] text-white font-semibold text-base py-4 rounded-full shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer dark:bg-primary dark:text-on-primary dark:hover:bg-primary-container">
+            <button onClick={onGoToConfirmation} className="w-full bg-primary hover:bg-primary/90 text-on-primary font-semibold text-base py-4 rounded-full shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer">
               Confirmar Pedido y Pagar
-              <Lock className="w-4 h-4 text-white" />
+              <Lock className="w-4 h-4 text-on-primary" />
             </button>
           </div>
         </div>

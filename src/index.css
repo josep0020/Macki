@@ -3,25 +3,25 @@
 
 @theme {
   /* ── Light mode tokens ── */
-  --color-primary:                   #334529;
-  --color-primary-container:         #4a5d3f;
+  --color-primary:                   #1E5631;
+  --color-primary-container:         #e3ece5;
   --color-on-primary:                #ffffff;
-  --color-on-primary-container:      #bfd5af;
+  --color-on-primary-container:      #10351b;
 
-  --color-surface:                   #fcf9f8;
+  --color-surface:                   #F5F2EB;
   --color-surface-container-lowest:  #ffffff;
-  --color-surface-container-low:     #f6f3f2;
-  --color-surface-container:         #f0eded;
-  --color-surface-container-high:    #eae7e7;
-  --color-surface-variant:           #e4e2e1;
+  --color-surface-container-low:     #f0ede5;
+  --color-surface-container:         #eae6dc;
+  --color-surface-container-high:    #e4dfd3;
+  --color-surface-variant:           #dfd9cb;
 
-  --color-on-surface:                #1b1c1c;
-  --color-on-surface-variant:        #444840;
+  --color-on-surface:                #3B2F2F;
+  --color-on-surface-variant:        #6e5e54;
 
-  --color-outline:                   #74786f;
-  --color-outline-variant:           #c4c8bd;
+  --color-outline:                   #8a7b70;
+  --color-outline-variant:           #C2B280;
 
-  --color-secondary:                 #77574d;
+  --color-secondary:                 #A97142;
   --color-on-secondary:              #ffffff;
 
   --color-error:                     #ba1a1a;
@@ -34,27 +34,27 @@
 /* ── Dark mode: redefine the SAME variable names so all Tailwind utilities
       pick up the new values automatically ── */
 .dark {
-  --color-primary:                   #8fa67e;
-  --color-primary-container:         #3a5030;
-  --color-on-primary:                #0e2208;
-  --color-on-primary-container:      #c5dcb4;
+  --color-primary:                   #88b895;
+  --color-primary-container:         #1b3a24;
+  --color-on-primary:                #0b2212;
+  --color-on-primary-container:      #c3ebd0;
 
-  /* Deep forest-green surfaces — no pure black */
-  --color-surface:                   #0d1a0d;
-  --color-surface-container-lowest:  #0a1509;
-  --color-surface-container-low:     #111f11;
-  --color-surface-container:         #162416;
-  --color-surface-container-high:    #1c2b1c;
-  --color-surface-variant:           #213222;
+  /* Cozy Olive/Forest deep dark surfaces — no pure black, no muddy brown */
+  --color-surface:                   #111412;
+  --color-surface-container-lowest:  #0c0e0d;
+  --color-surface-container-low:     #161a18;
+  --color-surface-container:         #1b201d;
+  --color-surface-container-high:    #222824;
+  --color-surface-variant:           #29312c;
 
-  --color-on-surface:                #eaf5e6;
-  --color-on-surface-variant:        #bdd6b7;
+  --color-on-surface:                #F5F2EB;
+  --color-on-surface-variant:        #C2B280;
 
-  --color-outline:                   #5e7a58;
-  --color-outline-variant:           #2e4430;
+  --color-outline:                   #455249;
+  --color-outline-variant:           #222824;
 
-  --color-secondary:                 #c99f93;
-  --color-on-secondary:              #4a2920;
+  --color-secondary:                 #A97142;
+  --color-on-secondary:              #ffffff;
 
   --color-error:                     #ff8a8a;
   --color-on-error:                  #690005;
@@ -499,5 +499,20 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .banner-dot.active {
   width: 24px;
   background-color: var(--color-primary);
+}
+
+/* ── Smooth Fade In Up ── */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 

@@ -219,7 +219,7 @@ export function OrderSuccessScreen({ orderId, orderData, cart, comuna, onGoHome,
           </div>
         )}
 
-        <button onClick={onGoHome} className="w-full bg-primary text-on-primary font-semibold text-lg py-4 rounded-xl shadow-lg hover:bg-primary-container active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+        <button onClick={onGoHome} className="w-full bg-primary text-on-primary font-semibold text-lg py-4 rounded-xl shadow-lg hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
           <Home className="w-5 h-5" />
           Volver al Inicio
         </button>

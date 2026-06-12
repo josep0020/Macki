@@ -22,6 +22,7 @@ export function OrderConfirmationScreen({ cart, comuna, onConfirm, onGoBack, the
   const [deliveryDate, setDeliveryDate] = useState('');
   const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('Sin preferencia');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -78,21 +79,24 @@ export function OrderConfirmationScreen({ cart, comuna, onConfirm, onGoBack, the
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
-      <header className="bg-surface sticky top-0 z-50 flex justify-between items-center w-full px-4 py-3 shadow-sm">
-        <button onClick={onGoBack} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors active:scale-95 text-primary">
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <h1 className="font-serif text-xl md:text-2xl text-primary font-bold">Datos de Entrega</h1>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleRandomFill}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-primary/40 text-xs font-semibold text-primary hover:bg-primary/5 active:scale-95 transition-all"
-            title="Rellenar con datos aleatorios"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            Demo
+      {/* Liquid Glass Header */}
+      <header className="sticky top-0 z-50 w-full bg-surface-container-lowest/80 dark:bg-surface-container-low/75 backdrop-blur-md border-b border-outline-variant/15 rounded-b-2xl shadow-sm transition-all">
+        <div className="max-w-md mx-auto flex justify-between items-center px-4 py-3">
+          <button onClick={onGoBack} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors active:scale-95 text-primary cursor-pointer" aria-label="Volver">
+            <ArrowLeft className="w-6 h-6" />
           </button>
-          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+          <h1 className="font-serif text-lg md:text-xl text-primary font-bold">Datos de Entrega</h1>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleRandomFill}
+              className="flex items-center gap-1 bg-primary/10 border border-primary/20 px-2.5 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/25 active:scale-95 transition-all cursor-pointer"
+              title="Rellenar con datos aleatorios"
+            >
+              <Sparkles className="w-3 h-3" />
+              Demo
+            </button>
+            <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+          </div>
         </div>
       </header>
 
@@ -178,9 +182,26 @@ export function OrderConfirmationScreen({ cart, comuna, onConfirm, onGoBack, the
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant/30 p-6 pb-safe z-50">
-        <div className="max-w-md mx-auto">
-          <button onClick={handleSubmit} className="w-full bg-primary text-on-primary font-semibold text-lg py-4 rounded-xl shadow-lg hover:bg-primary-container active:scale-[0.98] transition-all">
+      <div className="fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant/30 p-4 pb-safe z-50">
+        <div className="max-w-md mx-auto flex flex-col gap-3">
+          {/* Términos y Garantía Checkbox */}
+          <label className="flex items-start gap-2.5 cursor-pointer select-none px-1">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-0.5 rounded border-outline-variant text-primary focus:ring-primary h-4.5 w-4.5 cursor-pointer accent-primary"
+            />
+            <span className="text-[11px] text-on-surface-variant leading-normal">
+              Acepto la <strong className="text-on-surface">Garantía de Humedad del 25%</strong> (derecho a rechazo sin costo si marca más al medir en la entrega) y los Términos del Servicio.
+            </span>
+          </label>
+
+          <button
+            onClick={handleSubmit}
+            disabled={!acceptedTerms}
+            className="w-full bg-primary text-on-primary font-semibold text-lg py-4 rounded-xl shadow-lg hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
             Confirmar Pedido
           </button>
         </div>

@@ -19,6 +19,7 @@ interface AccountScreenProps {
   onRepeatOrder: (order: TrackedOrder) => void;
   theme: ThemeMode;
   onToggleTheme: () => void;
+  onEditingOrdersChange?: (editing: boolean) => void;
 }
 
 interface UserProfile {
@@ -33,6 +34,7 @@ export function AccountScreen({
   onRepeatOrder,
   theme,
   onToggleTheme,
+  onEditingOrdersChange,
 }: AccountScreenProps) {
   const [activeMainTab, setActiveMainTab] = useState<'pedidos' | 'fidelidad' | 'soporte'>('pedidos');
   const [showQR, setShowQR] = useState(false);
@@ -74,6 +76,18 @@ export function AccountScreen({
   const [isEditingOrders, setIsEditingOrders] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Sync editing orders state with parent to hide bottom navbar
+  useEffect(() => {
+    if (onEditingOrdersChange) {
+      onEditingOrdersChange(isEditingOrders && selectedOrderIds.size > 0);
+    }
+    return () => {
+      if (onEditingOrdersChange) {
+        onEditingOrdersChange(false);
+      }
+    };
+  }, [isEditingOrders, selectedOrderIds.size, onEditingOrdersChange]);
 
   // Coverage Dropdown
   const [showCoverage, setShowCoverage] = useState(false);
@@ -134,13 +148,16 @@ export function AccountScreen({
 
   return (
     <div className="min-h-screen pb-32">
-      <header className="bg-surface sticky top-0 z-50 flex justify-between items-center w-full px-4 py-3 shadow-sm">
-        <div className="w-10" />
-        <div className="flex items-center gap-2">
-          <Flame className="text-primary w-6 h-6 fill-primary" />
-          <h1 className="text-xl text-primary font-bold tracking-tight">Mi Cuenta</h1>
+      {/* Liquid Glass Header */}
+      <header className="sticky top-0 z-50 w-full bg-surface-container-lowest/80 dark:bg-surface-container-low/75 backdrop-blur-md border-b border-outline-variant/15 rounded-b-2xl shadow-sm transition-all">
+        <div className="max-w-md mx-auto flex justify-between items-center px-4 py-3">
+          <div className="w-10" />
+          <div className="flex items-center gap-2">
+            <Flame className="text-primary w-6 h-6 fill-primary" />
+            <h1 className="text-lg text-primary font-bold tracking-tight">Mi Cuenta</h1>
+          </div>
+          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
         </div>
-        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </header>
 
       <main className="max-w-md mx-auto px-6 mt-6 flex flex-col gap-6">
@@ -209,13 +226,179 @@ export function AccountScreen({
                 </button>
                 <button
                   onClick={handleSaveProfile}
-                  className="text-xs font-bold px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary shadow-sm transition-all cursor-pointer"
+                  className="text-xs font-bold px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-on-primary shadow-sm transition-all cursor-pointer"
                 >
                   Guardar
                 </button>
               </div>
             </div>
           )}
+        </section>
+
+        {/* ── Configuración de Apariencia (Estilo Ajustes iOS) ── */}
+        <section className="bg-surface-container-low/40 rounded-3xl p-5 border border-outline-variant/10 shadow-sm flex flex-col gap-4">
+          <h3 className="text-[10px] font-bold text-on-surface-variant/70 uppercase tracking-widest pl-1" style={{ letterSpacing: '0.8px' }}>
+            Apariencia
+          </h3>
+          <div className="grid grid-cols-2 gap-6 px-1">
+            {/* Opción Modo Claro */}
+            <button
+              onClick={() => {
+                if (theme === 'dark') onToggleTheme();
+              }}
+              className="flex flex-col items-center gap-3 cursor-pointer group focus:outline-none"
+              type="button"
+            >
+              {/* iPhone Mockup (Claro) */}
+              <div
+                className={`w-full aspect-[9/16] rounded-[22px] border-2 p-1.5 flex flex-col bg-zinc-100/90 shadow-sm transition-all duration-300 ${
+                  theme === 'light'
+                    ? 'border-primary ring-4 ring-primary/10 shadow-md scale-[1.02]'
+                    : 'border-zinc-300/60 dark:border-zinc-800/80 hover:border-zinc-400 dark:hover:border-zinc-700'
+                }`}
+              >
+                {/* Phone screen inner wrapper */}
+                <div className="flex-1 rounded-[16px] bg-white border border-zinc-200/50 flex flex-col overflow-hidden relative select-none">
+                  {/* Status Bar */}
+                  <div className="h-4 px-2 flex justify-between items-center text-[7px] text-zinc-800 font-bold select-none pointer-events-none">
+                    <span>9:41</span>
+                    <div className="flex items-center gap-0.5">
+                      <span className="w-1.5 h-1 bg-zinc-800 rounded-[1px]" />
+                      <span className="w-2 h-1 bg-zinc-800 rounded-[1px]" />
+                      <span className="w-3 h-1.5 bg-zinc-800 rounded-[1px] relative flex items-center justify-center">
+                        <span className="absolute -right-[1px] w-[1px] h-[3px] bg-zinc-800 rounded-r-[1px]" />
+                      </span>
+                    </div>
+                  </div>
+                  {/* Mini App Header */}
+                  <div className="h-5 bg-zinc-50 border-b border-zinc-100 flex items-center justify-between px-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-200" />
+                    <div className="w-10 h-1.5 rounded-full bg-primary/20" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary/20" />
+                  </div>
+                  {/* Mini App Body */}
+                  <div className="flex-1 p-2 flex flex-col gap-1.5">
+                    {/* Air Quality Banner */}
+                    <div className="h-4 bg-emerald-50 rounded-md border border-emerald-100 flex items-center px-1">
+                      <div className="w-6 h-1 rounded-full bg-emerald-500" />
+                    </div>
+                    {/* Product Card */}
+                    <div className="flex-1 bg-zinc-50 border border-zinc-100 rounded-lg p-1.5 flex flex-col gap-1">
+                      <div className="w-full h-8 bg-zinc-200/60 rounded-md" />
+                      <div className="w-8 h-1 rounded-full bg-zinc-400" />
+                      <div className="w-12 h-1 rounded-full bg-zinc-300" />
+                      <div className="w-full h-3 bg-primary rounded-md mt-auto" />
+                    </div>
+                  </div>
+                  {/* Bottom Navigation */}
+                  <div className="h-5 bg-zinc-50 border-t border-zinc-100 flex justify-around items-center px-1">
+                    <div className="w-2 h-2 rounded-full bg-primary" />
+                    <div className="w-2 h-2 rounded-full bg-zinc-300" />
+                    <div className="w-2 h-2 rounded-full bg-zinc-300" />
+                  </div>
+                </div>
+              </div>
+
+              {/* iOS style Selector Button */}
+              <div className="flex items-center gap-2 mt-1">
+                <div
+                  className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all duration-300 ${
+                    theme === 'light'
+                      ? 'bg-primary border-primary shadow-sm shadow-primary/25'
+                      : 'border-zinc-300 dark:border-zinc-700 bg-transparent'
+                  }`}
+                >
+                  {theme === 'light' && (
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <span className={`text-xs font-semibold ${theme === 'light' ? 'text-on-surface' : 'text-on-surface-variant'}`}>
+                  Claro
+                </span>
+              </div>
+            </button>
+
+            {/* Opción Modo Oscuro */}
+            <button
+              onClick={() => {
+                if (theme === 'light') onToggleTheme();
+              }}
+              className="flex flex-col items-center gap-3 cursor-pointer group focus:outline-none"
+              type="button"
+            >
+              {/* iPhone Mockup (Oscuro) */}
+              <div
+                className={`w-full aspect-[9/16] rounded-[22px] border-2 p-1.5 flex flex-col bg-[#1C1C1E] shadow-sm transition-all duration-300 ${
+                  theme === 'dark'
+                    ? 'border-primary ring-4 ring-primary/10 shadow-md scale-[1.02]'
+                    : 'border-zinc-800 dark:border-zinc-800 hover:border-zinc-700'
+                }`}
+              >
+                {/* Phone screen inner wrapper */}
+                <div className="flex-1 rounded-[16px] bg-[#111412] border border-zinc-800 flex flex-col overflow-hidden relative select-none">
+                  {/* Status Bar */}
+                  <div className="h-4 px-2 flex justify-between items-center text-[7px] text-zinc-300 font-bold select-none pointer-events-none">
+                    <span>9:41</span>
+                    <div className="flex items-center gap-0.5">
+                      <span className="w-1.5 h-1 bg-zinc-300 rounded-[1px]" />
+                      <span className="w-2 h-1 bg-zinc-300 rounded-[1px]" />
+                      <span className="w-3 h-1.5 bg-zinc-300 rounded-[1px] relative flex items-center justify-center">
+                        <span className="absolute -right-[1px] w-[1px] h-[3px] bg-zinc-300 rounded-r-[1px]" />
+                      </span>
+                    </div>
+                  </div>
+                  {/* Mini App Header */}
+                  <div className="h-5 bg-zinc-900 border-b border-zinc-950 flex items-center justify-between px-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-800" />
+                    <div className="w-10 h-1.5 rounded-full bg-primary/40" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary/40" />
+                  </div>
+                  {/* Mini App Body */}
+                  <div className="flex-1 p-2 flex flex-col gap-1.5">
+                    {/* Air Quality Banner */}
+                    <div className="h-4 bg-emerald-950/40 rounded-md border border-emerald-900/30 flex items-center px-1">
+                      <div className="w-6 h-1 rounded-full bg-emerald-500" />
+                    </div>
+                    {/* Product Card */}
+                    <div className="flex-1 bg-zinc-900/60 border border-zinc-800 rounded-lg p-1.5 flex flex-col gap-1">
+                      <div className="w-full h-8 bg-zinc-800/80 rounded-md" />
+                      <div className="w-8 h-1 rounded-full bg-zinc-700" />
+                      <div className="w-12 h-1 rounded-full bg-zinc-600" />
+                      <div className="w-full h-3 bg-primary rounded-md mt-auto" />
+                    </div>
+                  </div>
+                  {/* Bottom Navigation */}
+                  <div className="h-5 bg-zinc-900 border-t border-zinc-955 flex justify-around items-center px-1">
+                    <div className="w-2 h-2 rounded-full bg-primary" />
+                    <div className="w-2 h-2 rounded-full bg-zinc-800" />
+                    <div className="w-2 h-2 rounded-full bg-[#1b201d]" />
+                  </div>
+                </div>
+              </div>
+
+              {/* iOS style Selector Button */}
+              <div className="flex items-center gap-2 mt-1">
+                <div
+                  className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all duration-300 ${
+                    theme === 'dark'
+                      ? 'bg-primary border-primary shadow-sm shadow-primary/25'
+                      : 'border-zinc-300 dark:border-zinc-700 bg-transparent'
+                  }`}
+                >
+                  {theme === 'dark' && (
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <span className={`text-xs font-semibold ${theme === 'dark' ? 'text-on-surface' : 'text-on-surface-variant'}`}>
+                  Oscuro
+                </span>
+              </div>
+            </button>
+          </div>
         </section>
 
         {/* ── Main Tab Navigation ── */}
@@ -587,7 +770,7 @@ export function AccountScreen({
                   onRepeatOrder(orderToRepeat);
                   setOrderToRepeat(null);
                 }}
-                className="flex-1 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-on-primary shadow-md transition-all hover:bg-primary-container active:scale-[0.98]"
+                className="flex-1 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-on-primary shadow-md transition-all hover:bg-primary/90 active:scale-[0.98]"
               >
                 Reemplazar carrito
               </button>

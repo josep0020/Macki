@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Calculator, Flame, Package, Droplets, X, Building2, Home, Warehouse, ShoppingCart, Check, MapPin } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { Calculator, Flame, Package, Droplets, X, Building2, Home, Warehouse, ShoppingCart, Check, MapPin, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { calculateConsumption, roundForCart, HeatingType, UsageLevel, HouseType } from '../utils/calculator';
 import { products } from '../data';
 import { Product } from '../types';
@@ -40,7 +40,23 @@ export function ConsumptionCalculator({ open, onClose, onAddToCart }: Consumptio
   const [houseType, setHouseType] = useState<HouseType>('estandar');
   const [selectedLena, setSelectedLena] = useState<Product>(lenaProducts[3]); // Mezcla por defecto
   const [showResult, setShowResult] = useState(false);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(false);
   const [added, setAdded] = useState<HeatingType | null>(null);
+  const [moisture, setMoisture] = useState(20);
+  
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const loaderRef = useRef<HTMLDivElement>(null);
+
+  const efficiency = useMemo(() => {
+    if (moisture <= 20) return 100;
+    const loss = (moisture - 20) * 2;
+    return Math.max(40, 100 - loss);
+  }, [moisture]);
+
+  const lossPercentage = useMemo(() => {
+    return 100 - efficiency;
+  }, [efficiency]);
 
   const meters = Number(squareMeters) || 0;
   const totalMonths = Number(months) || 0;
@@ -78,12 +94,42 @@ export function ConsumptionCalculator({ open, onClose, onAddToCart }: Consumptio
     };
   }, [results, selectedLena, totalMonths]);
 
+  const moneyLost = useMemo(() => {
+    if (!costs) return 0;
+    return Math.round(costs.leña.total * (lossPercentage / 100));
+  }, [costs, lossPercentage]);
+
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
     };
   }, []);
+
+  // Smooth scroll to results once they are ready and rendered
+  useEffect(() => {
+    if (showResult && resultsRef.current) {
+      const timer = setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 120);
+      return () => clearTimeout(timer);
+    }
+  }, [showResult]);
+
+  const handleCalculate = () => {
+    setIsCalculating(true);
+    setShowResult(false);
+    
+    // Instant smooth scroll to the robot loader in the next render frame
+    setTimeout(() => {
+      loaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+
+    setTimeout(() => {
+      setIsCalculating(false);
+      setShowResult(true);
+    }, 1200);
+  };
 
   if (!open) return null;
 
@@ -211,16 +257,127 @@ export function ConsumptionCalculator({ open, onClose, onAddToCart }: Consumptio
           {/* Calculate button */}
           <button
             type="button"
-            onClick={() => setShowResult(true)}
-            disabled={meters <= 0 || totalMonths <= 0}
-            className="mt-5 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-on-primary shadow-md transition-all hover:bg-primary-container active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={handleCalculate}
+            disabled={meters <= 0 || totalMonths <= 0 || isCalculating}
+            className="mt-5 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-on-primary shadow-md transition-all hover:bg-primary/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Calcular consumo
+            {isCalculating ? 'Calculando...' : 'Calcular consumo'}
           </button>
+
+          {/* Silly Robot Loading animation */}
+          {isCalculating && (
+            <div ref={loaderRef} className="mt-6 p-5 bg-surface-container-low border border-outline-variant/15 rounded-3xl flex flex-col items-center justify-center text-center space-y-4 animate-fade-in shadow-inner animate-pulse">
+              <svg className="w-20 h-20 text-primary animate-bounce" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                <g>
+                  <polygon strokeLinejoin="round" strokeMiterlimit={10} points="10.5,6.5 9,7.5 7.5,6.5 7.5,5 9,4 10.5,5" />
+                  <line strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit={10} x1="12" y1="0.5" x2="12" y2="1.5" />
+                  <polygon strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit={10} points="16,23.5 8,23.5 6.5,16 9,13.5 15,13.5 17.5,16" />
+                  <line strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit={10} x1="12" y1="10.5" x2="12" y2="13.5" />
+                  <line strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit={10} x1="7.6" y1="21.5" x2="16.4" y2="21.5" />
+                  <polyline strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit={10} points="2.5,16 3,19 6.844,17.719" />
+                  <polyline strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit={10} points="0.5,12 0.5,14 2.5,16 4.5,14 4.5,12" />
+                  <polygon strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit={10} points="16,10.5 20.5,6 16,1.5 8,1.5 3.5,6 8,10.5" />
+                  <polygon strokeLinejoin="round" strokeMiterlimit={10} points="13.5,6.5 15,7.5 16.5,6.5 16.5,5 15,4 13.5,5" />
+                  <polyline strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit={10} points="21.5,16 21,19 17.156,17.719" />
+                  <polyline strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit={10} points="23.5,12 23.5,14 21.5,16 19.5,14 19.5,12" />
+                </g>
+              </svg>
+              
+              {/* Message */}
+              <div className="relative bg-surface-container-lowest border border-outline-variant/30 px-4 py-2.5 rounded-2xl shadow-sm text-[11px] font-bold text-on-surface">
+                <span className="inline-block animate-bounce mr-1">🤖</span>
+                <span>"¡Beep boop! Estoy calculando tu consumo..."</span>
+                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-surface-container-lowest border-t border-l border-outline-variant/30 rotate-45" />
+              </div>
+            </div>
+          )}
+
+          {/* Explainer Link */}
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setShowExplanation(!showExplanation)}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline cursor-pointer"
+            >
+              <Info className="h-3.5 w-3.5" />
+              ¿Cómo funciona el cálculo?
+              {showExplanation ? (
+                <ChevronUp className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" />
+              )}
+            </button>
+          </div>
+
+          {/* Explainer Panel */}
+          {showExplanation && (
+            <div className="mt-3 rounded-2xl border border-outline-variant/30 bg-surface-container-low p-4 text-xs text-on-surface-variant leading-relaxed animate-fade-in">
+              <h4 className="font-semibold text-on-surface mb-2 flex items-center gap-1">
+                Fórmula del consumo estimado
+              </h4>
+              <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-3 text-center font-mono text-[13px] font-bold text-primary mb-3">
+                m² × Coef. Uso × Coef. Aislamiento × Meses
+              </div>
+              <p className="mb-2">
+                Multiplicamos la superficie de tu hogar por factores adaptados al clima local:
+              </p>
+              <ul className="space-y-3 pl-1">
+                <li>
+                  <span className="font-semibold text-on-surface">1. Coeficientes de Uso (por m² al mes):</span>
+                  <div className="mt-1.5 grid grid-cols-3 gap-2 text-[10px] bg-surface-container-lowest border border-outline-variant/10 rounded-xl p-2.5 font-mono">
+                    <div>
+                      <p className="font-bold text-primary mb-1 border-b border-outline-variant/20 pb-0.5">Leña (m³)</p>
+                      <p>Bajo: 0.025</p>
+                      <p>Medio: 0.045</p>
+                      <p>Alto: 0.070</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-primary mb-1 border-b border-outline-variant/20 pb-0.5">Pellet (sacos)</p>
+                      <p>Bajo: 0.40</p>
+                      <p>Medio: 0.75</p>
+                      <p>Alto: 1.25</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-primary mb-1 border-b border-outline-variant/20 pb-0.5">Parafina (L)</p>
+                      <p>Bajo: 0.25</p>
+                      <p>Medio: 0.50</p>
+                      <p>Alto: 0.875</p>
+                    </div>
+                  </div>
+                </li>
+                <li>
+                  <span className="font-semibold text-on-surface">2. Coeficientes de Aislamiento (Multiplicador):</span>
+                  <div className="mt-1.5 grid grid-cols-3 gap-2 text-[10px] bg-surface-container-lowest border border-outline-variant/10 rounded-xl p-2.5 font-mono text-center">
+                    <div>
+                      <p className="font-bold text-primary mb-0.5">Nueva</p>
+                      <p className="text-on-surface">0.85</p>
+                      <p className="text-[9px] text-green-700 font-sans font-semibold">-15% consumo</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-primary mb-0.5">Estándar</p>
+                      <p className="text-on-surface">1.00</p>
+                      <p className="text-[9px] text-on-surface-variant font-sans">Base</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-primary mb-0.5">Antigua</p>
+                      <p className="text-on-surface">1.25</p>
+                      <p className="text-[9px] text-red-600 font-sans font-semibold">+25% consumo</p>
+                    </div>
+                  </div>
+                </li>
+                <li>
+                  <span className="font-semibold text-on-surface">3. Lógica de Redondeo:</span>
+                  <p className="mt-0.5 text-[11px]">
+                    Para la <strong className="text-on-surface">leña</strong> estimamos al primer decimal (ej: 1.8 m³). Para <strong className="text-on-surface">pellet y parafina</strong> se redondea hacia arriba al entero más cercano para asegurar autonomía suficiente.
+                  </p>
+                </li>
+              </ul>
+            </div>
+          )}
 
           {/* Results */}
           {showResult && results && costs && (
-            <div className="mt-6 space-y-4">
+            <div ref={resultsRef} className="mt-6 space-y-4">
               <p className="text-center text-xs font-semibold uppercase tracking-[0.14em] text-on-surface-variant">
                 Comparativa para {meters} m² · {totalMonths} mes{totalMonths !== 1 ? 'es' : ''}
               </p>
@@ -253,6 +410,57 @@ export function ConsumptionCalculator({ open, onClose, onAddToCart }: Consumptio
                   })}
                 </div>
 
+                {/* Humedad selector */}
+                <div className="mt-4 border-t border-outline-variant/20 pt-3">
+                  <div className="flex items-center justify-between text-xs font-semibold text-on-surface">
+                    <span>Humedad de tu Leña</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      moisture <= 25 
+                        ? 'bg-emerald-500/10 text-emerald-700' 
+                        : moisture <= 35 
+                          ? 'bg-amber-500/10 text-amber-700' 
+                          : 'bg-red-500/10 text-red-700'
+                    }`}>
+                      {moisture}% {moisture <= 25 ? '(Seca Certificada)' : '(Húmeda / Informal)'}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="15"
+                    max="50"
+                    value={moisture}
+                    onChange={(e) => setMoisture(Number(e.target.value))}
+                    className="w-full mt-2 accent-primary cursor-pointer"
+                  />
+                  
+                  {/* Dinero Perdido / Diagnostico */}
+                  <div className="mt-3 rounded-xl bg-surface-container p-3 space-y-2 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-on-surface-variant">Eficiencia Real:</span>
+                      <span className="font-bold text-on-surface">{efficiency}%</span>
+                    </div>
+                    {moisture > 25 ? (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="text-on-surface-variant">Dinero perdido en vapor:</span>
+                          <span className="font-bold text-red-600 dark:text-red-400">
+                            -${formatNumber(moneyLost)} ({lossPercentage}%)
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-2 text-[10px] text-red-700 dark:text-red-300 mt-1">
+                          <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-red-500" />
+                          <span>Tu estufa gastará energía en hervir el agua antes de calentar. Emitirá humo visible denso.</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-start gap-2 text-[10px] text-emerald-700 dark:text-emerald-300 mt-1">
+                        <Check className="w-3.5 h-3.5 shrink-0 mt-0.5 text-emerald-600" />
+                        <span>Calor eficiente y sin humo visible. Cumple plenamente con la normativa de la SEREMI.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="mt-3 flex items-end justify-between">
                   <div>
                     <p className="text-xs text-on-surface-variant">Total estimado</p>
@@ -262,7 +470,7 @@ export function ConsumptionCalculator({ open, onClose, onAddToCart }: Consumptio
                   <button
                     onClick={() => handleAdd('leña')}
                     disabled={added === 'leña'}
-                    className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-md transition-all hover:bg-primary-container active:scale-[0.98] disabled:opacity-70"
+                    className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-md transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-70"
                   >
                     {added === 'leña' ? <Check className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
                     {added === 'leña' ? 'Agregado' : `Agregar ${costs.leña.cartQty}`}
@@ -288,7 +496,7 @@ export function ConsumptionCalculator({ open, onClose, onAddToCart }: Consumptio
                   <button
                     onClick={() => handleAdd('pellet')}
                     disabled={added === 'pellet'}
-                    className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-md transition-all hover:bg-primary-container active:scale-[0.98] disabled:opacity-70"
+                    className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-md transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-70"
                   >
                     {added === 'pellet' ? <Check className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
                     {added === 'pellet' ? 'Agregado' : `Agregar ${costs.pellet.cartQty}`}
@@ -313,7 +521,7 @@ export function ConsumptionCalculator({ open, onClose, onAddToCart }: Consumptio
                   </div>
                   <button
                     onClick={() => window.open('https://www.google.com/maps/search/estaciones+de+servicio+copec+petrobras+shell+region+del+maule/', '_blank')}
-                    className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-md transition-all hover:bg-primary-container active:scale-[0.98]"
+                    className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-md transition-all hover:bg-primary/90 active:scale-[0.98]"
                   >
                     <MapPin className="h-4 w-4" />
                     Ver ubicaciones

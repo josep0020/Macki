@@ -8,9 +8,10 @@ interface ProductCardProps {
   cartQuantity: number;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
+  isRestrictedComuna?: boolean;
 }
 
-export function ProductCard({ product, onAdd, cartQuantity, isFavorite = false, onToggleFavorite }: ProductCardProps) {
+export function ProductCard({ product, onAdd, cartQuantity, isFavorite = false, onToggleFavorite, isRestrictedComuna = false }: ProductCardProps) {
   const [justAdded, setJustAdded] = useState(false);
   const [heartBounce, setHeartBounce] = useState(false);
   const images = product.images && product.images.length > 0 ? product.images : [product.imageUrl];
@@ -40,8 +41,20 @@ export function ProductCard({ product, onAdd, cartQuantity, isFavorite = false, 
     setCurrentImage(prev => (prev + 1) % images.length);
   };
 
+  const showRestrictionBadge = isRestrictedComuna && product.category === 'leña';
+  const showRecommendedBadge = isRestrictedComuna && product.category === 'pellet';
+
+  let cardClasses = "h-full bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border flex flex-col transition-transform hover:-translate-y-1 hover:shadow-md duration-300 ";
+  if (showRestrictionBadge) {
+    cardClasses += "opacity-75 saturate-[0.6] border-red-500/30 dark:border-red-950/40";
+  } else if (showRecommendedBadge) {
+    cardClasses += "border-emerald-500/40 dark:border-emerald-950/40 ring-1 ring-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]";
+  } else {
+    cardClasses += "border-outline-variant/30";
+  }
+
   return (
-    <div className="h-full bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/30 flex flex-col transition-transform hover:-translate-y-1 hover:shadow-md">
+    <div className={cardClasses}>
       <div className="relative h-48 w-full p-2">
         <img
           alt={product.name}
@@ -49,7 +62,17 @@ export function ProductCard({ product, onAdd, cartQuantity, isFavorite = false, 
           className="w-full h-full object-cover rounded-xl transition-opacity duration-300"
           loading="lazy"
         />
-        {product.badge && (
+        {showRestrictionBadge && (
+          <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-md animate-pulse">
+            Restricción hoy
+          </div>
+        )}
+        {showRecommendedBadge && (
+          <div className="absolute top-4 left-4 bg-emerald-600 text-white px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase shadow-md max-w-[calc(100%-3.5rem)] truncate">
+            Alt. Limpia
+          </div>
+        )}
+        {!showRestrictionBadge && !showRecommendedBadge && product.badge && (
           <div className="absolute top-4 left-4 bg-secondary/90 text-on-secondary px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm shadow-sm">
             {product.badge}
           </div>
@@ -57,10 +80,10 @@ export function ProductCard({ product, onAdd, cartQuantity, isFavorite = false, 
         {onToggleFavorite && (
           <button
             onClick={handleToggleFavorite}
-            className={`absolute top-4 right-4 w-9 h-9 bg-white/70 dark:bg-white/50 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm transition-transform duration-300 ${heartBounce ? 'scale-125' : 'scale-100'}`}
+            className={`absolute top-4 right-4 w-9 h-9 bg-surface-container-lowest/90 dark:bg-surface-container-high/95 border border-outline-variant/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm transition-transform duration-300 ${heartBounce ? 'scale-125' : 'scale-100'}`}
             aria-label={isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
           >
-            <Heart className={`w-5 h-5 transition-colors ${isFavorite ? 'fill-red-500 text-red-500' : 'fill-transparent text-on-surface-variant'}`} />
+            <Heart className={`w-5 h-5 transition-colors ${isFavorite ? 'fill-red-500 text-red-500 dark:fill-red-400 dark:text-red-400' : 'fill-transparent text-on-surface-variant'}`} />
           </button>
         )}
         {hasMultipleImages && (
@@ -111,11 +134,16 @@ export function ProductCard({ product, onAdd, cartQuantity, isFavorite = false, 
             </span>
             <span className="text-sm text-on-surface-variant">/ {product.unit}</span>
           </div>
+          {showRestrictionBadge && (
+            <p className="text-[10px] text-red-600 dark:text-red-400 font-bold mt-2">
+              Prohibido encender en esta comuna hoy por Preemergencia.
+            </p>
+          )}
         </div>
         {product.category === 'parafina' ? (
           <button
             onClick={() => window.open('https://www.google.com/maps/search/estaciones+de+servicio+copec+petrobras+shell+region+del+maule/', '_blank')}
-            className="w-full font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] bg-primary hover:bg-primary-container text-on-primary"
+            className="w-full font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] bg-primary hover:bg-primary/90 text-on-primary"
           >
             <MapPin className="w-5 h-5" />
             Ver ubicaciones en el Maule
@@ -126,7 +154,7 @@ export function ProductCard({ product, onAdd, cartQuantity, isFavorite = false, 
             className={`w-full font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
               justAdded
                 ? 'bg-green-700 text-white'
-                : 'bg-primary hover:bg-primary-container text-on-primary'
+                : 'bg-primary hover:bg-primary/90 text-on-primary'
             }`}
           >
             {justAdded ? (
@@ -137,7 +165,7 @@ export function ProductCard({ product, onAdd, cartQuantity, isFavorite = false, 
             ) : (
               <>
                 <ShoppingCart className="w-5 h-5" />
-                <span>Añadir al Carrito</span>
+                <span>{showRestrictionBadge ? 'Añadir para futuro' : 'Añadir al Carrito'}</span>
                 {cartQuantity > 0 && (
                   <span className="ml-auto bg-white/25 text-white text-[11px] font-bold w-5.5 h-5.5 rounded-full flex items-center justify-center shrink-0">
                     {cartQuantity}

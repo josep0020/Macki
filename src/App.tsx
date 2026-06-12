@@ -5,6 +5,8 @@ import { DEFAULT_COMUNA, getShippingCost, products } from './data';
 import { saveOrder, getOrders, simulateOrderProgress } from './utils/orders';
 import { getFavorites, toggleFavorite } from './utils/favorites';
 import { addPointsForOrder, getActiveCoupons, redeemCoupon, applyCouponDiscount } from './utils/loyalty';
+import { AirQualityData, AirQualityLevel, getAirQualityDataFromAqi, fetchComunaAirQuality, simulatedAqiDatabase } from './utils/airQuality';
+import { InfoDrawer } from './components/InfoDrawer';
 
 const HomeScreen             = lazy(() => import('./screens/HomeScreen').then(m => ({ default: m.HomeScreen })));
 const CatalogScreen          = lazy(() => import('./screens/CatalogScreen').then(m => ({ default: m.CatalogScreen })));
@@ -36,11 +38,50 @@ export default function App() {
   const [showCalculator, setShowCalculator] = useState(false);
   const [favorites, setFavorites] = useState<string[]>(() => getFavorites());
   const [activeCoupon, setActiveCoupon] = useState<LoyaltyCoupon | null>(null);
+  const [showInfoDrawer, setShowInfoDrawer] = useState(false);
+  const [hideBottomNav, setHideBottomNav] = useState(false);
   const [lastOrderPoints, setLastOrderPoints] = useState<{
     pointsEarned: number;
     leveledUp: boolean;
     newLevel?: string;
   } | null>(null);
+
+  const [airQuality, setAirQuality] = useState<AirQualityData>(() => {
+    const initialAqi = simulatedAqiDatabase[DEFAULT_COMUNA] ?? 45;
+    return getAirQualityDataFromAqi(initialAqi);
+  });
+  const [simulatedLevel, setSimulatedLevel] = useState<AirQualityLevel | null>(null);
+
+  // Reset simulation when comuna changes
+  useEffect(() => {
+    setSimulatedLevel(null);
+  }, [comuna]);
+
+  // Handle air quality updates (hybrid API/local simulation)
+  useEffect(() => {
+    let active = true;
+
+    if (simulatedLevel) {
+      let simulatedAqi = 45;
+      if (simulatedLevel === 'bueno') simulatedAqi = 25;
+      else if (simulatedLevel === 'regular') simulatedAqi = 75;
+      else if (simulatedLevel === 'alerta') simulatedAqi = 125;
+      else if (simulatedLevel === 'preemergencia') simulatedAqi = 175;
+      else if (simulatedLevel === 'emergencia') simulatedAqi = 250;
+
+      setAirQuality(getAirQualityDataFromAqi(simulatedAqi, true));
+    } else {
+      fetchComunaAirQuality(comuna).then(aqi => {
+        if (active) {
+          setAirQuality(getAirQualityDataFromAqi(aqi, false));
+        }
+      });
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [comuna, simulatedLevel]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -210,6 +251,11 @@ export default function App() {
           theme={theme}
           onToggleTheme={toggleTheme}
           onOpenCalculator={() => setShowCalculator(true)}
+          airQuality={airQuality}
+          onSimulateLevel={setSimulatedLevel}
+          comuna={comuna}
+          onOpenDrawer={() => setShowInfoDrawer(true)}
+          onGoToAccount={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setCurrentScreen('account'); }}
         />
         </div>
       )}
@@ -225,6 +271,9 @@ export default function App() {
           onToggleTheme={toggleTheme}
           favorites={favorites}
           onToggleFavorite={handleToggleFavorite}
+          airQuality={airQuality}
+          onSimulateLevel={setSimulatedLevel}
+          onOpenDrawer={() => setShowInfoDrawer(true)}
         />
         </div>
       )}
@@ -243,6 +292,7 @@ export default function App() {
           onApplyCoupon={handleApplyCoupon}
           onRemoveCoupon={handleRemoveCoupon}
           couponDiscount={couponDiscount}
+          airQuality={airQuality}
         />
         </div>
       )}
@@ -283,6 +333,7 @@ export default function App() {
           onRepeatOrder={handleRepeatOrder}
           theme={theme}
           onToggleTheme={toggleTheme}
+          onEditingOrdersChange={setHideBottomNav}
         />
         </div>
       )}
@@ -293,6 +344,7 @@ export default function App() {
           activeTab={currentScreen}
           onNavigate={handleNavigate}
           cartItemCount={cartItemCount}
+          forceHidden={hideBottomNav}
         />
       )}
 
@@ -304,6 +356,12 @@ export default function App() {
           onAddToCart={handleAddToCart}
         />
       )}
+
+      {/* Info Sidebar Drawer */}
+      <InfoDrawer
+        open={showInfoDrawer}
+        onClose={() => setShowInfoDrawer(false)}
+      />
       </Suspense>
     </div>
   );

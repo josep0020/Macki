@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Flame, MapPin, ChevronDown, Store } from 'lucide-react';
+import { Flame, MapPin, ChevronDown, Store, ShieldAlert, Check, Menu } from 'lucide-react';
 import { products, comunas } from '../data';
 import { merchantsByComuna } from '../merchants';
 import { ProductCard } from '../components/ProductCard';
 import { TrustIndicators } from '../components/TrustIndicators';
 import { MerchantCard } from '../components/MerchantCard';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { AirQualityBanner } from '../components/AirQualityBanner';
 import { CartItem, CategoryFilter, ThemeMode } from '../types';
+import { AirQualityData, AirQualityLevel } from '../utils/airQuality';
 
 interface CatalogScreenProps {
   cart: CartItem[];
@@ -18,6 +20,9 @@ interface CatalogScreenProps {
   onToggleTheme: () => void;
   favorites: string[];
   onToggleFavorite: (productId: string) => void;
+  airQuality: AirQualityData;
+  onSimulateLevel: (level: AirQualityLevel | null) => void;
+  onOpenDrawer: () => void;
 }
 
 const categories: { key: CategoryFilter; label: string }[] = [
@@ -28,32 +33,69 @@ const categories: { key: CategoryFilter; label: string }[] = [
   { key: 'favoritos', label: 'Favoritos' },
 ];
 
-export function CatalogScreen({ cart, comuna, onComunaChange, onAddToCart, onGoToCheckout, theme, onToggleTheme, favorites, onToggleFavorite }: CatalogScreenProps) {
+export function CatalogScreen({ 
+  cart, 
+  comuna, 
+  onComunaChange, 
+  onAddToCart, 
+  onGoToCheckout, 
+  theme, 
+  onToggleTheme, 
+  favorites, 
+  onToggleFavorite,
+  airQuality,
+  onSimulateLevel,
+  onOpenDrawer
+}: CatalogScreenProps) {
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>('todos');
   const [locationOpen, setLocationOpen] = useState(false);
   const [showMerchants, setShowMerchants] = useState(false);
 
-  const filteredProducts = activeCategory === 'favoritos'
+  const baseProducts = activeCategory === 'favoritos'
     ? products.filter(p => favorites.includes(p.id))
     : activeCategory === 'todos'
       ? products
       : products.filter(p => p.category === activeCategory);
 
+  // If restricted, sort pellets and parafina first, leña last
+  const filteredProducts = airQuality.isRestricted
+    ? [...baseProducts].sort((a, b) => {
+        if (a.category === 'leña' && b.category !== 'leña') return 1;
+        if (a.category !== 'leña' && b.category === 'leña') return -1;
+        return 0;
+      })
+    : baseProducts;
+
   const merchants = merchantsByComuna[comuna] ?? [];
 
   return (
     <div className="min-h-screen pb-24">
-      <header className="bg-surface sticky top-0 z-50 flex justify-between items-center w-full px-4 py-3 shadow-sm">
-        <div className="w-10" />
-        <div className="flex items-center gap-2">
-          <Flame className="text-primary w-7 h-7 fill-primary" />
-          <h1 className="font-serif text-2xl text-primary font-bold tracking-tight">Maule Leña</h1>
+      {/* Liquid Glass Header */}
+      <header className="sticky top-0 z-50 w-full bg-surface-container-lowest/80 dark:bg-surface-container-low/75 backdrop-blur-md border-b border-outline-variant/15 rounded-b-2xl shadow-sm transition-all">
+        <div className="max-w-md mx-auto flex justify-between items-center px-4 py-3">
+          <button
+            onClick={onOpenDrawer}
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors active:scale-95 text-on-surface cursor-pointer"
+            aria-label="Abrir menú de información"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          <div className="flex items-center gap-2">
+            <Flame className="text-primary w-7 h-7 fill-primary" />
+            <h1 className="font-serif text-2xl text-primary font-bold tracking-tight">Maule Leña</h1>
+          </div>
+          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
         </div>
-        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </header>
 
       <main className="max-w-md mx-auto px-6 mt-4">
-        <h2 className="font-serif text-2xl text-on-surface font-bold mt-4 mb-4">Nuestros Productos</h2>
+        <AirQualityBanner
+          comuna={comuna}
+          airQuality={airQuality}
+          onSimulateLevel={onSimulateLevel}
+        />
+
+        <h2 className="font-serif text-2xl text-on-surface font-bold mt-6 mb-4">Nuestros Productos</h2>
 
         <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar -mx-6 px-6 relative">
           {categories.map(cat => (
@@ -71,6 +113,34 @@ export function CatalogScreen({ cart, comuna, onComunaChange, onAddToCart, onGoT
           ))}
         </div>
 
+        {airQuality.isRestricted && (
+          <div className="mt-2 mb-4 p-4 rounded-2xl bg-red-500/5 border border-red-500/25 text-red-900 dark:text-red-300 flex items-start gap-3 shadow-sm">
+            <ShieldAlert className="w-5 h-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5 animate-pulse" />
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider text-red-800 dark:text-red-200">
+                LEÑA PROHIBIDA: FISCALIZACIÓN ACTIVA
+              </h4>
+              <p className="text-xs mt-0.5 leading-relaxed opacity-90">
+                Multas de hasta $325.000 por encendido hoy en {comuna}. Prefiera pellet o parafina.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {activeCategory === 'pellet' && (
+          <div className="mt-2 mb-4 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/25 text-emerald-900 dark:text-emerald-300 flex items-start gap-3 shadow-sm">
+            <Check className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-200">
+                Garantía de Suministro Protegido
+              </h4>
+              <p className="text-xs mt-0.5 leading-relaxed opacity-90">
+                Reserva de stock prioritario ENplus activa para la provincia. Despacho express asegurado en 24-48 horas ante el riesgo de quiebre invernal regional.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
           {filteredProducts.map((product, idx) => (
             <div
@@ -84,6 +154,7 @@ export function CatalogScreen({ cart, comuna, onComunaChange, onAddToCart, onGoT
                 cartQuantity={cart.find(i => i.product.id === product.id)?.quantity ?? 0}
                 isFavorite={favorites.includes(product.id)}
                 onToggleFavorite={() => onToggleFavorite(product.id)}
+                isRestrictedComuna={airQuality.isRestricted}
               />
             </div>
           ))}
@@ -165,7 +236,7 @@ export function CatalogScreen({ cart, comuna, onComunaChange, onAddToCart, onGoT
             </p>
             <button
               onClick={onGoToCheckout}
-              className="w-full bg-primary text-on-primary font-semibold text-base py-3.5 rounded-xl shadow-lg hover:bg-primary-container active:scale-[0.98] transition-all"
+              className="w-full bg-primary text-on-primary font-semibold text-base py-3.5 rounded-xl shadow-lg hover:bg-primary/90 active:scale-[0.98] transition-all"
             >
               Ir al Carrito y Pagar
             </button>
